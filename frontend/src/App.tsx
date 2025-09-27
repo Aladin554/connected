@@ -17,19 +17,26 @@ import FormElements from "./pages/Forms/FormElements";
 import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
-import ProtectedRoute from "./components/ProtectedRoute";  // ✅ import
+import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Dashboard/Home";
 
 // NEW: import admin user management
 import AdminUsers from "./pages/Admin/AdminUsers";
 
 export default function App() {
+  const token = localStorage.getItem("token");
+
   return (
     <Router>
       <ScrollToTop />
       <Routes>
-        {/* Redirect root to signin */}
-        <Route path="/" element={<Navigate to="/signin" replace />} />
+        {/* Root Redirect */}
+        <Route
+          path="/"
+          element={
+            token ? <Navigate to="/dashboard" replace /> : <Navigate to="/signin" replace />
+          }
+        />
 
         {/* Auth Pages */}
         <Route path="/signin" element={<SignIn />} />

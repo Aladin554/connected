@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
@@ -14,25 +14,48 @@ export default function SignInForm() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
+  // 🔹 Auto-redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!email || !password) {
+      alert("Email and password are required");
+      return;
+    }
+
     try {
-      const res = await axios.post("api/login", {
+      const res = await axios.post("/api/login", {
         email,
         password,
       });
 
-      // যদি লগইন সফল হয়
-      localStorage.setItem("auth", "true");
+      // ✅ Save token & user
+      localStorage.setItem("token", res.data.access_token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
       navigate("/dashboard"); // redirect to dashboard
-    } catch (error: any) {
-      if (error.response && error.response.status === 401) {
-        alert("Invalid email or password");
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        if (err.response) {
+          if (err.response.status === 401) {
+            alert("Invalid email or password");
+          } else if (err.response.status === 404) {
+            alert("User not found");
+          } else {
+            alert("Something went wrong. Please try again!");
+          }
+        } else {
+          alert("Network error, please check your connection!");
+        }
       } else {
-        alert("Something went wrong. Please try again!");
+        alert("Unexpected error occurred!");
       }
     }
   };

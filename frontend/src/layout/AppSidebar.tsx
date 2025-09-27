@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom"; // ✅ use react-router-dom
+import { Link, useLocation } from "react-router-dom";
 import {
   BoxCubeIcon,
   CalenderIcon,
@@ -31,7 +31,7 @@ const navItems: NavItem[] = [
   {
     icon: <UserCircleIcon />,
     name: "Admin Users",
-    path: "/dashboard/admin-users", // ✅ absolute path
+    path: "/dashboard/admin-users",
   },
   {
     icon: <CalenderIcon />,
