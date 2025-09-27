@@ -3,18 +3,27 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\UserController;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
-
+// Public routes
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
 
-Route::get('/users', [UserController::class, 'index']);      // List users
-Route::post('/users', [UserController::class, 'store']);     // Create user
-Route::get('/users/{id}', [UserController::class, 'show']);  // Show single user
-Route::put('/users/{id}', [UserController::class, 'update']); // Update user
-Route::delete('/users/{id}', [UserController::class, 'destroy']); // Delete user
+// Protected routes (require Sanctum auth token)
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // Authenticated user info
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    // User resource routes
+    Route::get('/users', [UserController::class, 'index']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+
+    // Logout
+    Route::post('/logout', [AuthController::class, 'logout']);
+});

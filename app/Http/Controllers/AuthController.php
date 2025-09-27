@@ -10,31 +10,33 @@ use Illuminate\Support\Facades\Log;
 class AuthController extends Controller
 {
     public function login(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
+
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user || !Hash::check($request->password, $user->password)) {
+        return response()->json(['message' => 'Invalid credentials'], 401);
+    }
+
+    // ✅ Create token
+    $token = $user->createToken('auth_token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'Login successful',
+        'access_token' => $token,
+        'user' => $user,
+    ]);
+}
+
+    // ✅ Optional logout method
+    public function logout(Request $request)
     {
-        try {
-            $request->validate([
-                'email' => 'required|email',
-                'password' => 'required',
-            ]);
+        $request->user()->currentAccessToken()->delete();
 
-            $user = User::where('email', $request->email)->first();
-
-            if (!$user) {
-                return response()->json(['message' => 'User not found'], 404);
-            }
-
-            if (!Hash::check($request->password, $user->password)) {
-                return response()->json(['message' => 'Invalid password'], 401);
-            }
-
-            return response()->json([
-                'message' => 'Login successful',
-                'user' => $user
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error($e->getMessage());
-            return response()->json(['message' => 'Server Error', 'error' => $e->getMessage()], 500);
-        }
+        return response()->json(['message' => 'Logged out successfully']);
     }
 }
