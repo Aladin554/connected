@@ -15,12 +15,26 @@ export default function SignInForm() {
   const navigate = useNavigate();
 
   // 🔹 Auto-redirect if already logged in
+  // useEffect(() => {
+  //   const token = localStorage.getItem("token");
+  //   if (token) {
+  //     navigate("/dashboard");
+  //   }
+  // }, [navigate]);
+
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
       navigate("/dashboard");
+    } else {
+      setLoading(false);
     }
   }, [navigate]);
+
+  if (loading) return null; // or spinner
+
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

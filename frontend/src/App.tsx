@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -19,24 +19,17 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Dashboard/Home";
-
-// NEW: import admin user management
 import AdminUsers from "./pages/Admin/AdminUsers";
+import AdminUserForm from "./pages/Admin/AdminUserForm"; // ✅ new
+import RootRedirect from "./components/RootRedirect";
 
 export default function App() {
-  const token = localStorage.getItem("token");
-
   return (
     <Router>
       <ScrollToTop />
       <Routes>
         {/* Root Redirect */}
-        <Route
-          path="/"
-          element={
-            token ? <Navigate to="/dashboard" replace /> : <Navigate to="/signin" replace />
-          }
-        />
+        <Route path="/" element={<RootRedirect />} />
 
         {/* Auth Pages */}
         <Route path="/signin" element={<SignIn />} />
@@ -79,6 +72,8 @@ export default function App() {
 
           {/* Admin Pages */}
           <Route path="admin-users" element={<AdminUsers />} />
+          <Route path="admin-users/add" element={<AdminUserForm />} /> {/* ✅ Add User */}
+          <Route path="admin-users/:id/edit" element={<AdminUserForm />} /> {/* ✅ Edit User */}
         </Route>
 
         {/* Fallback Route */}
