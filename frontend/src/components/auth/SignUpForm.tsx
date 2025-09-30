@@ -28,10 +28,10 @@ export default function SignUpForm() {
       return;
     }
 
-    // Save user to localStorage (replace with real API)
+    // Save user to sessionStorage (replace with real API)
     const user = { firstName, lastName, email, password };
-    localStorage.setItem("user", JSON.stringify(user));
-    localStorage.setItem("auth", "true"); // mark as logged in
+    sessionStorage.setItem("user", JSON.stringify(user));
+    sessionStorage.setItem("auth", "true"); // mark as logged in
     navigate("/dashboard"); // redirect to dashboard
   };
 

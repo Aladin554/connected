@@ -12,29 +12,26 @@ export default function SignInForm() {
   const [isChecked, setIsChecked] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   // 🔹 Auto-redirect if already logged in
-  // useEffect(() => {
-  //   const token = localStorage.getItem("token");
-  //   if (token) {
-  //     navigate("/dashboard");
-  //   }
-  // }, [navigate]);
-
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
+    const roleId = sessionStorage.getItem("role_id");
     if (token) {
-      navigate("/dashboard");
+      // Redirect based on role
+      if (roleId && parseInt(roleId, 10) === 3) {
+        navigate("/user-dashboard", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     } else {
       setLoading(false);
     }
   }, [navigate]);
 
-  if (loading) return null; // or spinner
-
+  if (loading) return null; // optional spinner
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,29 +42,27 @@ export default function SignInForm() {
     }
 
     try {
-      const res = await axios.post("/api/login", {
-        email,
-        password,
-      });
+      const res = await axios.post("/api/login", { email, password });
 
-      // ✅ Save token & user
-      localStorage.setItem("token", res.data.access_token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      const { access_token, user } = res.data;
 
-      navigate("/dashboard"); // redirect to dashboard
+      // ✅ Save token & role_id
+      sessionStorage.setItem("token", access_token);
+      sessionStorage.setItem("role_id", user.role_id.toString());
+      sessionStorage.setItem("user", JSON.stringify(user));
+
+      // Redirect based on role
+      if (user.role_id === 3) {
+        navigate("/user-dashboard", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        if (err.response) {
-          if (err.response.status === 401) {
-            alert("Invalid email or password");
-          } else if (err.response.status === 404) {
-            alert("User not found");
-          } else {
-            alert("Something went wrong. Please try again!");
-          }
-        } else {
-          alert("Network error, please check your connection!");
-        }
+        const status = err.response?.status;
+        if (status === 401) alert("Invalid email or password");
+        else if (status === 404) alert("User not found");
+        else alert("Something went wrong. Please try again!");
       } else {
         alert("Unexpected error occurred!");
       }
@@ -76,7 +71,7 @@ export default function SignInForm() {
 
   return (
     <div className="flex flex-col flex-1">
-      <div className="w-full max-w-md pt-10 mx-auto">
+      {/* <div className="w-full max-w-md pt-10 mx-auto">
         <Link
           to="/"
           className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -84,7 +79,7 @@ export default function SignInForm() {
           <ChevronLeftIcon className="size-5" />
           Back to dashboard
         </Link>
-      </div>
+      </div> */}
 
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
@@ -157,7 +152,7 @@ export default function SignInForm() {
             </div>
           </form>
 
-          <div className="mt-5">
+          {/* <div className="mt-5">
             <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
               Don&apos;t have an account?{" "}
               <Link
@@ -167,7 +162,7 @@ export default function SignInForm() {
                 Sign Up
               </Link>
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

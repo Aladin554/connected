@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
@@ -12,7 +14,7 @@ class UserController extends Controller
     // ✅ User List
     public function index()
     {
-        $users = User::all();
+        $users = User::with('role')->get(); // eager load role
         return response()->json($users);
     }
 
@@ -25,20 +27,20 @@ class UserController extends Controller
                 'last_name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|min:6',
-                'role' => 'sometimes|string|in:user,admin', // optional role
+                'role_id' => 'required|exists:roles,id', // link to roles table
             ]);
 
             $user = User::create([
-                'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
+                'firstName' => $request->first_name,
+                'lastName' => $request->last_name,
                 'email' => $request->email,
-                'role' => $request->role ?? 'user',
+                'role_id' => $request->role_id,
                 'password' => Hash::make($request->password),
             ]);
 
             return response()->json([
                 'message' => 'User created successfully',
-                'user' => $user
+                'user' => $user->load('role') // include role data
             ], 201);
 
         } catch (\Exception $e) {
@@ -50,7 +52,7 @@ class UserController extends Controller
     // ✅ Show Single User
     public function show($id)
     {
-        $user = User::find($id);
+        $user = User::with('role')->find($id);
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
         }
@@ -71,13 +73,13 @@ class UserController extends Controller
                 'last_name' => 'sometimes|string|max:255',
                 'email' => 'sometimes|email|unique:users,email,' . $id,
                 'password' => 'sometimes|min:6',
-                'role' => 'sometimes|string|in:user,admin',
+                'role_id' => 'sometimes|exists:roles,id',
             ]);
 
-            $user->first_name = $request->first_name ?? $user->first_name;
-            $user->last_name = $request->last_name ?? $user->last_name;
+            $user->firstName = $request->first_name ?? $user->firstName;
+            $user->lastName = $request->last_name ?? $user->lastName;
             $user->email = $request->email ?? $user->email;
-            $user->role = $request->role ?? $user->role;
+            $user->role_id = $request->role_id ?? $user->role_id;
 
             if ($request->password) {
                 $user->password = Hash::make($request->password);
@@ -87,7 +89,7 @@ class UserController extends Controller
 
             return response()->json([
                 'message' => 'User updated successfully',
-                'user' => $user
+                'user' => $user->load('role')
             ]);
 
         } catch (\Exception $e) {
@@ -107,5 +109,38 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'User deleted successfully']);
+    }
+
+    public function showProfile()
+    {
+        return response()->json(Auth::user());
+    }
+
+    // Update logged-in user profile
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'firstName' => 'required|string|max:255',
+            'lastName'  => 'required|string|max:255',
+            'email'     => 'required|email|unique:users,email,' . $user->id,
+            'password'  => 'nullable|string|min:6',
+        ]);
+
+        $user->firstName = $request->firstName;
+        $user->lastName  = $request->lastName;
+        $user->email     = $request->email;
+
+        if (!empty($request->password)) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user'    => $user,
+        ]);
     }
 }

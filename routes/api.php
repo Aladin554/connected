@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 
 // Public routes
@@ -23,6 +24,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::put('/users/{id}', [UserController::class, 'update']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::get('/roles', [RoleController::class, 'index']);
+   Route::get('/profile', [UserController::class, 'showProfile']);
+    Route::put('/profile', [UserController::class, 'updateProfile']);
 
     // Logout
     Route::post('/logout', [AuthController::class, 'logout']);

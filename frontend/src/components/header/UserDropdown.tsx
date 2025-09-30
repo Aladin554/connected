@@ -1,26 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import api from "../../api/axios"; // your axios instance
 
-export default function UserDropdown() {
+interface UserDropdownProps {
+  // optional props if you want to pass user data from parent
+  initialUserName?: string;
+  initialUserEmail?: string;
+}
+
+export default function UserDropdown({ initialUserName, initialUserEmail }: UserDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [userName, setUserName] = useState(initialUserName || "");
+  const [userEmail, setUserEmail] = useState(initialUserEmail || "");
   const navigate = useNavigate();
 
-  function toggleDropdown() {
-    setIsOpen(!isOpen);
-  }
+  const toggleDropdown = () => setIsOpen(!isOpen);
+  const closeDropdown = () => setIsOpen(false);
 
-  function closeDropdown() {
-    setIsOpen(false);
-  }
+  // Fetch user data from API if not provided
+  useEffect(() => {
+    if (!userName || !userEmail) {
+      const fetchUser = async () => {
+        try {
+          const res = await api.get("/profile"); // replace with your API endpoint
+          setUserName(`${res.data.firstName} ${res.data.lastName}`);
+          setUserEmail(res.data.email);
+        } catch (err) {
+          console.error("Failed to fetch user profile:", err);
+        }
+      };
+      fetchUser();
+    }
+  }, [userName, userEmail]);
 
-  function handleSignOut() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  const handleSignOut = () => {
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
     closeDropdown();
     navigate("/signin");
-  }
+  };
 
   return (
     <div className="relative">
@@ -28,11 +48,11 @@ export default function UserDropdown() {
         onClick={toggleDropdown}
         className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
       >
-        <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
+        {/* <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
           <img src="./images/user/owner.jpg" alt="User" />
-        </span>
+        </span> */}
 
-        <span className="block mr-1 font-medium text-theme-sm">Musharof</span>
+        <span className="block mr-1 font-medium text-theme-sm"> {userName || "Loading..."}</span>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
@@ -60,10 +80,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            Musharof Chowdhury
+             {userName || "Loading..."}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            randomuser@pimjo.com
+            {userEmail || "Loading..."}
           </span>
         </div>
 
