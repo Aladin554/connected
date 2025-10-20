@@ -13,16 +13,16 @@ export default function AdminUserForm() {
     const isEdit = Boolean(id);
 
     const [form, setForm] = useState({
-        firstName: "",
-        lastName: "",
+        first_name: "",
+        last_name: "",
         email: "",
         roleId: "",
         password: "",
     });
 
     const [errors, setErrors] = useState({
-        firstName: "",
-        lastName: "",
+        first_name: "",
+        last_name: "",
         email: "",
         roleId: "",
         password: "",
@@ -44,8 +44,8 @@ export default function AdminUserForm() {
             api.get(`/users/${id}`)
                 .then((res) => {
                     setForm({
-                        firstName: res.data.firstName,
-                        lastName: res.data.lastName,
+                        first_name: res.data.first_name,
+                        last_name: res.data.last_name,
                         email: res.data.email,
                         roleId: res.data.role?.id || "",
                         password: "",
@@ -58,19 +58,19 @@ export default function AdminUserForm() {
     const validateForm = () => {
         let valid = true;
         const newErrors = {
-            firstName: "",
-            lastName: "",
+            first_name: "",
+            last_name: "",
             email: "",
             roleId: "",
             password: "",
         };
 
-        if (!form.firstName.trim()) {
-            newErrors.firstName = "First name is required.";
+        if (!form.first_name.trim()) {
+            newErrors.first_name = "First name is required.";
             valid = false;
         }
-        if (!form.lastName.trim()) {
-            newErrors.lastName = "Last name is required.";
+        if (!form.last_name.trim()) {
+            newErrors.last_name = "Last name is required.";
             valid = false;
         }
         if (!form.email.trim()) {
@@ -102,8 +102,8 @@ export default function AdminUserForm() {
         setSubmitting(true);
         try {
             const payload = {
-                first_name: form.firstName,
-                last_name: form.lastName,
+                first_name: form.first_name,
+                last_name: form.last_name,
                 email: form.email,
                 role_id: form.roleId,
                 password: form.password || undefined,
@@ -141,19 +141,19 @@ export default function AdminUserForm() {
                         </label>
                         <input
                             type="text"
-                            value={form.firstName}
+                            value={form.first_name}
                             onChange={(e) =>
-                                setForm({ ...form, firstName: e.target.value })
+                                setForm({ ...form, first_name: e.target.value })
                             }
                             className={`w-full border px-3 py-2 rounded-lg text-lg dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 ${
-                                errors.firstName
+                                errors.first_name
                                     ? "focus:ring-red-500 border-red-500"
                                     : "focus:ring-blue-500"
                             }`}
                         />
-                        {errors.firstName && (
+                        {errors.first_name && (
                             <p className="text-red-500 text-sm mt-1">
-                                {errors.firstName}
+                                {errors.first_name}
                             </p>
                         )}
                     </div>
@@ -165,19 +165,19 @@ export default function AdminUserForm() {
                         </label>
                         <input
                             type="text"
-                            value={form.lastName}
+                            value={form.last_name}
                             onChange={(e) =>
-                                setForm({ ...form, lastName: e.target.value })
+                                setForm({ ...form, last_name: e.target.value })
                             }
                             className={`w-full border px-3 py-2 rounded-lg text-lg dark:bg-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 ${
-                                errors.lastName
+                                errors.last_name
                                     ? "focus:ring-red-500 border-red-500"
                                     : "focus:ring-blue-500"
                             }`}
                         />
-                        {errors.lastName && (
+                        {errors.last_name && (
                             <p className="text-red-500 text-sm mt-1">
-                                {errors.lastName}
+                                {errors.last_name}
                             </p>
                         )}
                     </div>

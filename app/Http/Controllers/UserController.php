@@ -3,83 +3,110 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Http\JsonResponse;
 class UserController extends Controller
 {
-    // ✅ User List
-    public function index()
+    /**
+     * Display a listing of users.
+     *
+     * @return JsonResponse
+     */
+    public function index(): JsonResponse
     {
-        $users = User::with('role')->get(); // eager load role
+        $users = User::with('role')->get();
+
         return response()->json($users);
     }
 
-    // ✅ Create User (Admin Only)
-    public function store(Request $request)
+    /**
+     * Store a newly created user in storage.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function store(Request $request): JsonResponse
     {
         try {
             $request->validate([
                 'first_name' => 'required|string|max:255',
-                'last_name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email',
-                'password' => 'required|min:6',
-                'role_id' => 'required|exists:roles,id', // link to roles table
+                'last_name'  => 'required|string|max:255',
+                'email'      => 'required|email|unique:users,email',
+                'password'   => 'required|min:6',
+                'role_id'    => 'required|exists:roles,id',
             ]);
 
             $user = User::create([
-                'firstName' => $request->first_name,
-                'lastName' => $request->last_name,
-                'email' => $request->email,
-                'role_id' => $request->role_id,
-                'password' => Hash::make($request->password),
+                'first_name' => $request->first_name,
+                'last_name'  => $request->last_name,
+                'email'     => $request->email,
+                'role_id'   => $request->role_id,
+                'password'  => Hash::make($request->password),
             ]);
 
             return response()->json([
                 'message' => 'User created successfully',
-                'user' => $user->load('role') // include role data
+                'user'    => $user->load('role'),
             ], 201);
-
         } catch (\Exception $e) {
             Log::error($e->getMessage());
-            return response()->json(['message' => 'Server Error', 'error' => $e->getMessage()], 500);
+
+            return response()->json([
+                'message' => 'Server Error',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
     }
 
-    // ✅ Show Single User
-    public function show($id)
+    /**
+     * Display the specified user.
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function show(int $id): JsonResponse
     {
         $user = User::with('role')->find($id);
+
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
         }
+
         return response()->json($user);
     }
 
-    // ✅ Update User
-    public function update(Request $request, $id)
+    /**
+     * Update the specified user in storage.
+     *
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function update(Request $request, int $id): JsonResponse
     {
         try {
+            /** @var User|null $user */
             $user = User::find($id);
+
             if (!$user) {
                 return response()->json(['message' => 'User not found'], 404);
             }
 
             $request->validate([
                 'first_name' => 'sometimes|string|max:255',
-                'last_name' => 'sometimes|string|max:255',
-                'email' => 'sometimes|email|unique:users,email,' . $id,
-                'password' => 'sometimes|min:6',
-                'role_id' => 'sometimes|exists:roles,id',
+                'last_name'  => 'sometimes|string|max:255',
+                'email'      => 'sometimes|email|unique:users,email,' . $id,
+                'password'   => 'sometimes|min:6',
+                'role_id'    => 'sometimes|exists:roles,id',
             ]);
 
-            $user->firstName = $request->first_name ?? $user->firstName;
-            $user->lastName = $request->last_name ?? $user->lastName;
-            $user->email = $request->email ?? $user->email;
-            $user->role_id = $request->role_id ?? $user->role_id;
+            $user->first_name = $request->first_name ?? $user->first_name;
+            $user->last_name  = $request->last_name ?? $user->last_name;
+            $user->email     = $request->email ?? $user->email;
+            $user->role_id   = $request->role_id ?? $user->role_id;
 
             if ($request->password) {
                 $user->password = Hash::make($request->password);
@@ -89,19 +116,28 @@ class UserController extends Controller
 
             return response()->json([
                 'message' => 'User updated successfully',
-                'user' => $user->load('role')
+                'user'    => $user->load('role'),
             ]);
-
         } catch (\Exception $e) {
             Log::error($e->getMessage());
-            return response()->json(['message' => 'Server Error', 'error' => $e->getMessage()], 500);
+
+            return response()->json([
+                'message' => 'Server Error',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
     }
 
-    // ✅ Delete User
-    public function destroy($id)
+    /**
+     * Remove the specified user from storage.
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function destroy(int $id): JsonResponse
     {
         $user = User::find($id);
+
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
         }
@@ -111,25 +147,36 @@ class UserController extends Controller
         return response()->json(['message' => 'User deleted successfully']);
     }
 
-    public function showProfile()
+    /**
+     * Display the authenticated user's profile.
+     *
+     * @return JsonResponse
+     */
+    public function showProfile(): JsonResponse
     {
         return response()->json(Auth::user());
     }
 
-    // Update logged-in user profile
-    public function updateProfile(Request $request)
+    /**
+     * Update the authenticated user's profile.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function updateProfile(Request $request): JsonResponse
     {
+        /** @var User $user */
         $user = Auth::user();
 
         $request->validate([
-            'firstName' => 'required|string|max:255',
-            'lastName'  => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name'  => 'required|string|max:255',
             'email'     => 'required|email|unique:users,email,' . $user->id,
             'password'  => 'nullable|string|min:6',
         ]);
 
-        $user->firstName = $request->firstName;
-        $user->lastName  = $request->lastName;
+        $user->first_name = $request->first_name;
+        $user->last_name  = $request->last_name;
         $user->email     = $request->email;
 
         if (!empty($request->password)) {

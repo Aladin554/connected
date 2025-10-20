@@ -25,7 +25,7 @@ export default function UserDropdown({ initialUserName, initialUserEmail }: User
       const fetchUser = async () => {
         try {
           const res = await api.get("/profile"); // replace with your API endpoint
-          setUserName(`${res.data.firstName} ${res.data.lastName}`);
+          setUserName(`${res.data.first_name} ${res.data.last_name}`);
           setUserEmail(res.data.email);
         } catch (err) {
           console.error("Failed to fetch user profile:", err);

@@ -1,24 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../../api/axios.ts";
-import { Trash2, Edit, Plus } from "lucide-react";
+import api from "../../../api/axios";
+import { Trash2, Edit, Plus, ImageIcon } from "lucide-react";
 
-interface Role {
+interface WorkType {
     id: number;
-    name: string;
-}
-interface User {
-    id: number;
-    first_name: string;
-    last_name: string;
-    email: string;
-    role?: Role;
+    title: string;
+    modal_title: string;
+    modal_image?: string;
+    modal_description?: string;
     created_at?: string;
     updated_at?: string;
 }
 
-export default function AdminUsers() {
-    const [users, setUsers] = useState<User[]>([]);
+export default function WorkType() {
+    const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [perPage, setPerPage] = useState(5);
@@ -28,53 +24,56 @@ export default function AdminUsers() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetchUsers();
+        fetchWorkTypes();
     }, []);
-    const fetchUsers = async () => {
+
+    const fetchWorkTypes = async () => {
         try {
-            const res = await api.get("/users");
-            setUsers(res.data);
+            const res = await api.get("/categories");
+            setWorkTypes(res.data.data || res.data);
         } catch {
-            alert("Failed to fetch users");
+            alert("Failed to fetch work types");
         } finally {
             setLoading(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure?")) return;
+        if (!confirm("Are you sure you want to delete this work type?")) return;
         try {
-            await api.delete(`/users/${id}`);
-            alert("User deleted");
-            fetchUsers();
+            await api.delete(`/categories/${id}`);
+            alert("Work type deleted successfully");
+            fetchWorkTypes();
         } catch {
-            alert("Error deleting user");
+            alert("Error deleting work type");
         }
     };
 
-    const openEditForm = (user: User) => {
-        navigate(`/dashboard/admin-users/${user.id}/edit`);
+    const openEditForm = (item: WorkType) => {
+        navigate(`/dashboard/categories/${item.id}/edit`);
     };
+
     const toggleSelectAll = () => {
         if (selectAll) setSelected([]);
-        else setSelected(users.map((u) => u.id));
+        else setSelected(workTypes.map((w) => w.id));
         setSelectAll(!selectAll);
     };
+
     const toggleSelect = (id: number) => {
         if (selected.includes(id))
             setSelected(selected.filter((s) => s !== id));
         else setSelected([...selected, id]);
     };
+
     const formatDate = (dateString?: string) =>
         !dateString ? "-" : new Date(dateString).toISOString().split("T")[0];
 
-    const filteredData = users.filter(
-        (u) =>
-            `${u.first_name} ${u.last_name}`
-                .toLowerCase()
-                .includes(search.toLowerCase()) ||
-            u.email.toLowerCase().includes(search.toLowerCase())
+    const filteredData = workTypes.filter(
+        (w) =>
+            w.title.toLowerCase().includes(search.toLowerCase()) ||
+            w.modal_title.toLowerCase().includes(search.toLowerCase())
     );
+
     const totalRows = filteredData.length;
     const totalPages = Math.ceil(totalRows / perPage);
     const paginatedData = filteredData.slice(
@@ -87,13 +86,13 @@ export default function AdminUsers() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-center mb-5 gap-3">
                 <h1 className="text-lg sm:text-2xl font-bold dark:text-gray-200 text-center sm:text-left">
-                    Admin User Management
+                    Work Type Management
                 </h1>
                 <Link
-                    to="/dashboard/admin-users/add"
+                    to="/dashboard/categories/add"
                     className="flex items-center gap-2 px-5 py-3 rounded-lg bg-blue-600 text-white text-base font-medium shadow-sm hover:bg-blue-700 hover:shadow-md transition-all"
                 >
-                    <Plus size={20} /> Add User
+                    <Plus size={20} /> Add Work Type
                 </Link>
             </div>
 
@@ -129,8 +128,8 @@ export default function AdminUsers() {
                 </div>
             </div>
 
-            {/* Table for md+ screens (larger) */}
-            <div className="hidden md:block overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800">
+            {/* Table */}
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800">
                 <table className="min-w-full text-base">
                     <thead className="border-b border-gray-100 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -142,16 +141,19 @@ export default function AdminUsers() {
                                 />
                             </th>
                             <th className="px-6 py-4 text-left font-medium text-gray-700 dark:text-gray-200 border-r">
-                                User
+                                Title
                             </th>
                             <th className="px-6 py-4 text-left font-medium text-gray-700 dark:text-gray-200 border-r">
-                                Role
+                                Modal Title
                             </th>
                             <th className="px-6 py-4 text-left font-medium text-gray-700 dark:text-gray-200 border-r">
-                                Created At
+                                Image
                             </th>
                             <th className="px-6 py-4 text-left font-medium text-gray-700 dark:text-gray-200 border-r">
-                                Updated At
+                                Created
+                            </th>
+                            <th className="px-6 py-4 text-left font-medium text-gray-700 dark:text-gray-200 border-r">
+                                Updated
                             </th>
                             <th className="px-6 py-4 text-left font-medium text-gray-700 dark:text-gray-200">
                                 Action
@@ -162,7 +164,7 @@ export default function AdminUsers() {
                         {loading ? (
                             <tr>
                                 <td
-                                    colSpan={6}
+                                    colSpan={7}
                                     className="px-6 py-4 text-center dark:text-gray-200"
                                 >
                                     Loading...
@@ -171,55 +173,71 @@ export default function AdminUsers() {
                         ) : paginatedData.length === 0 ? (
                             <tr>
                                 <td
-                                    colSpan={6}
+                                    colSpan={7}
                                     className="px-6 py-4 text-center dark:text-gray-200"
                                 >
-                                    No users found
+                                    No work types found
                                 </td>
                             </tr>
                         ) : (
-                            paginatedData.map((user) => (
+                            paginatedData.map((item) => (
                                 <tr
-                                    key={user.id}
+                                    key={item.id}
                                     className="hover:bg-gray-50 dark:hover:bg-gray-700"
                                 >
                                     <td className="w-14 text-center">
                                         <input
                                             type="checkbox"
-                                            checked={selected.includes(user.id)}
+                                            checked={selected.includes(item.id)}
                                             onChange={() =>
-                                                toggleSelect(user.id)
+                                                toggleSelect(item.id)
                                             }
                                             className="w-5 h-5 rounded-sm"
                                         />
                                     </td>
+                                    <td className="px-6 py-4 border-r text-left dark:text-gray-200 text-left text-base">
+                                        {item.title.replace(/<[^>]*>?/gm, "")}
+                                    </td>
+
+                                    <td
+                                        className="px-6 py-4 border-r text-left dark:text-gray-200 text-left text-base"
+                                        dangerouslySetInnerHTML={{
+                                            __html: item.modal_title,
+                                        }}
+                                    />
                                     <td className="px-6 py-4 border-r text-left">
-                                        <div className="font-semibold text-gray-900 dark:text-gray-200 text-lg">
-                                            {user.first_name} {user.last_name}
-                                        </div>
-                                        <div className="text-base text-gray-500 truncate">
-                                            {user.email}
-                                        </div>
+                                        {item.modal_image ? (
+                                            <img
+                                                src={
+                                                    item.modal_image ||
+                                                    "/placeholder.png"
+                                                }
+                                                alt="modal"
+                                                className="w-12 h-12 rounded object-cover"
+                                            />
+                                        ) : (
+                                            <ImageIcon
+                                                size={20}
+                                                className="text-gray-400"
+                                            />
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 border-r text-gray-700 dark:text-gray-200 text-left text-base">
-                                        {user.role?.name || "-"}
+                                        {formatDate(item.created_at)}
                                     </td>
                                     <td className="px-6 py-4 border-r text-gray-700 dark:text-gray-200 text-left text-base">
-                                        {formatDate(user.created_at)}
+                                        {formatDate(item.updated_at)}
                                     </td>
-                                    <td className="px-6 py-4 border-r text-gray-700 dark:text-gray-200 text-left text-base">
-                                        {formatDate(user.updated_at)}
-                                    </td>
-                                    <td className="px-6 py-4 text-left sm:text-right flex gap-3">
+                                    <td className="px-6 py-4 flex gap-3">
                                         <button
-                                            onClick={() => openEditForm(user)}
+                                            onClick={() => openEditForm(item)}
                                             className="p-3 rounded hover:bg-yellow-100 text-yellow-600"
                                         >
                                             <Edit size={20} />
                                         </button>
                                         <button
                                             onClick={() =>
-                                                handleDelete(user.id)
+                                                handleDelete(item.id)
                                             }
                                             className="p-3 rounded hover:bg-red-100 text-red-600"
                                         >
@@ -231,84 +249,6 @@ export default function AdminUsers() {
                         )}
                     </tbody>
                 </table>
-            </div>
-
-            {/* Card layout for small devices */}
-            <div className="md:hidden">
-                {/* Mobile Select All */}
-                <div className="flex items-center gap-2 mb-3 px-2">
-                    <input
-                        type="checkbox"
-                        checked={selectAll}
-                        onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded-sm"
-                    />
-                    <span className="text-gray-700 dark:text-gray-300 text-sm">
-                        Select All
-                    </span>
-                </div>
-
-                {/* Cards */}
-                <div className="grid gap-3">
-                    {loading ? (
-                        <div className="text-center dark:text-gray-200">
-                            Loading...
-                        </div>
-                    ) : paginatedData.length === 0 ? (
-                        <div className="text-center dark:text-gray-200">
-                            No users found
-                        </div>
-                    ) : (
-                        paginatedData.map((user) => (
-                            <div
-                                key={user.id}
-                                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg dark:border-gray-700 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={selected.includes(user.id)}
-                                        onChange={() => toggleSelect(user.id)}
-                                        className="w-4 h-4 rounded-sm"
-                                    />
-                                    <div>
-                                        <div className="font-medium text-gray-900 dark:text-gray-200">
-                                            {user.first_name} {user.last_name}
-                                        </div>
-                                        <div className="text-sm text-gray-500 truncate">
-                                            {user.email}
-                                        </div>
-                                        <div className="text-sm text-gray-400">
-                                            Role: {user.role?.name || "-"}
-                                        </div>
-                                        <div className="text-sm text-gray-400">
-                                            Created:{" "}
-                                            {formatDate(user.created_at)}
-                                        </div>
-                                        <div className="text-sm text-gray-400">
-                                            Updated:{" "}
-                                            {formatDate(user.updated_at)}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2 mt-3 sm:mt-0">
-                                    <button
-                                        onClick={() => openEditForm(user)}
-                                        className="p-2 rounded hover:bg-yellow-100 text-yellow-600"
-                                    >
-                                        <Edit size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(user.id)}
-                                        className="p-2 rounded hover:bg-red-100 text-red-600"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
             </div>
 
             {/* Pagination */}

@@ -9,8 +9,8 @@ import Button from "../ui/button/Button";
 export default function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [first_name, setfirst_name] = useState("");
+  const [last_name, setlast_name] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ export default function SignUpForm() {
   const handleSignUp = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!firstName || !lastName || !email || !password) {
+    if (!first_name || !last_name || !email || !password) {
       alert("Please fill in all fields");
       return;
     }
@@ -29,7 +29,7 @@ export default function SignUpForm() {
     }
 
     // Save user to sessionStorage (replace with real API)
-    const user = { firstName, lastName, email, password };
+    const user = { first_name, last_name, email, password };
     sessionStorage.setItem("user", JSON.stringify(user));
     sessionStorage.setItem("auth", "true"); // mark as logged in
     navigate("/dashboard"); // redirect to dashboard
@@ -66,8 +66,8 @@ export default function SignUpForm() {
                   <Input
                     type="text"
                     placeholder="Enter your first name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    value={first_name}
+                    onChange={(e) => setfirst_name(e.target.value)}
                   />
                 </div>
                 <div className="sm:col-span-1">
@@ -77,8 +77,8 @@ export default function SignUpForm() {
                   <Input
                     type="text"
                     placeholder="Enter your last name"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    value={last_name}
+                    onChange={(e) => setlast_name(e.target.value)}
                   />
                 </div>
               </div>

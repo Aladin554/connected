@@ -3,91 +3,97 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api/axios"; // your axios instance
 
 interface User {
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
+  password?: string;
+}
+
+interface Errors {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
   password?: string;
 }
 
 export default function EditProfile() {
   const [form, setForm] = useState<User>({
-    firstName: "",
-    lastName: "",
+    first_name: "",
+    last_name: "",
     email: "",
     password: "",
   });
-
+  const [errors, setErrors] = useState<Errors>({});
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch profile details on mount
+  // Fetch profile on mount
   useEffect(() => {
-  const fetchProfile = async () => {
-    try {
-      // Get token from localStorage or sessionStorage
-      const token = sessionStorage.getItem("token");
-      if (!token) {
-        console.warn("No token found, cannot fetch profile");
-        return;
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get("/profile");
+        setForm({
+          first_name: res.data.first_name || "",
+          last_name: res.data.last_name || "",
+          email: res.data.email || "",
+          password: "",
+        });
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+        alert("Failed to load profile");
       }
+    };
+    fetchProfile();
+  }, []);
 
-      // Make API request using axios instance
-      const res = await api.get("/profile", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      console.log("Profile data received:", res.data); // Debug log
-
-      // Update form state
-      setForm({
-        firstName: res.data.firstName || "",
-        lastName: res.data.lastName || "",
-        email: res.data.email || "",
-        password: "", // leave blank
-      });
-    } catch (err: any) {
-      // More detailed error logging
-      if (err.response) {
-        console.error("Server responded with error:", err.response.status, err.response.data);
-      } else if (err.request) {
-        console.error("No response received:", err.request);
-      } else {
-        console.error("Error setting up request:", err.message);
-      }
+  // Live validation
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case "first_name":
+        if (!value.trim()) return "First name is required";
+        break;
+      case "last_name":
+        if (!value.trim()) return "Last name is required";
+        break;
+      case "email":
+        if (!value.trim()) return "Email is required";
+        const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+        if (!emailRegex.test(value)) return "Invalid email address";
+        break;
+      case "password":
+        if (value && value.length < 6) return "Password must be at least 6 characters";
+        break;
     }
+    return "";
   };
 
-  fetchProfile();
-}, []);
-
-
-  // Handle form input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+    // Live validate
+    setErrors(prev => ({ ...prev, [name]: validateField(name, value) }));
   };
 
-  // Save profile
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate all fields before submit
+    const newErrors: Errors = {};
+    Object.entries(form).forEach(([key, value]) => {
+      const errMsg = validateField(key, value || "");
+      if (errMsg) newErrors[key as keyof Errors] = errMsg;
+    });
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+
     setLoading(true);
 
     try {
-      const token =
-        sessionStorage.getItem("token");
-
       const payload = { ...form };
-      if (!payload.password) {
-        delete payload.password; // do not send empty password
-      }
-
-      await api.put("/profile", payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      if (!payload.password) delete payload.password; // do not send empty password
+      await api.put("/profile", payload);
       alert("Profile updated successfully!");
-      navigate("/dashboard"); // redirect back after save
+      navigate("/dashboard");
     } catch (err) {
       console.error("Profile update failed:", err);
       alert("Failed to update profile");
@@ -102,30 +108,39 @@ export default function EditProfile() {
         <h1 className="text-2xl font-bold mb-6 text-center">Edit Profile</h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/** First Name */}
           <div>
             <label className="block mb-1 text-sm">First Name</label>
             <input
               type="text"
-              name="firstName"
-              value={form.firstName}
+              name="first_name"
+              value={form.first_name}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg bg-white/20 focus:bg-white/30 outline-none"
+              className={`w-full px-4 py-2 rounded-lg bg-white/20 focus:bg-white/30 outline-none ${
+                errors.first_name ? "border-red-500 border" : ""
+              }`}
               required
             />
+            {errors.first_name && <p className="text-red-400 text-sm mt-1">{errors.first_name}</p>}
           </div>
 
+          {/** Last Name */}
           <div>
             <label className="block mb-1 text-sm">Last Name</label>
             <input
               type="text"
-              name="lastName"
-              value={form.lastName}
+              name="last_name"
+              value={form.last_name}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg bg-white/20 focus:bg-white/30 outline-none"
+              className={`w-full px-4 py-2 rounded-lg bg-white/20 focus:bg-white/30 outline-none ${
+                errors.last_name ? "border-red-500 border" : ""
+              }`}
               required
             />
+            {errors.last_name && <p className="text-red-400 text-sm mt-1">{errors.last_name}</p>}
           </div>
 
+          {/** Email */}
           <div>
             <label className="block mb-1 text-sm">Email</label>
             <input
@@ -133,11 +148,15 @@ export default function EditProfile() {
               name="email"
               value={form.email}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg bg-white/20 focus:bg-white/30 outline-none"
+              className={`w-full px-4 py-2 rounded-lg bg-white/20 focus:bg-white/30 outline-none ${
+                errors.email ? "border-red-500 border" : ""
+              }`}
               required
             />
+            {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
           </div>
 
+          {/** Password */}
           <div>
             <label className="block mb-1 text-sm">New Password (optional)</label>
             <input
@@ -145,11 +164,15 @@ export default function EditProfile() {
               name="password"
               value={form.password}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-lg bg-white/20 focus:bg-white/30 outline-none"
+              className={`w-full px-4 py-2 rounded-lg bg-white/20 focus:bg-white/30 outline-none ${
+                errors.password ? "border-red-500 border" : ""
+              }`}
               placeholder="Leave blank to keep current"
             />
+            {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
           </div>
 
+          {/** Submit button */}
           <button
             type="submit"
             disabled={loading}

@@ -14,14 +14,10 @@ const RootRedirect = () => {
     setLoading(false);
   }, []);
 
-  if (loading) return null; // You can replace null with a spinner
+  if (loading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
 
   if (!token) return <Navigate to="/signin" replace />;
-
-  // Role-based redirect
   if (roleId === 3) return <Navigate to="/user-dashboard" replace />;
-
-  // Default dashboard for other roles
   return <Navigate to="/dashboard" replace />;
 };
 

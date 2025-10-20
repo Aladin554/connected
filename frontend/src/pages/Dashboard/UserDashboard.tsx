@@ -1,11 +1,13 @@
 // src/pages/Dashboard/UserDashboard.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../api/axios"; // your axios instance
+import api from "../../api/axios";
+import Header from "../User/Header";
+import Footer from "../User/Footer";
 
 export default function UserDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userName, setUserName] = useState<string>(""); // store user name
+  const [userName, setUserName] = useState<string>("");
   const navigate = useNavigate();
 
   // Set document title
@@ -17,8 +19,8 @@ export default function UserDashboard() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await api.get("/profile"); // axios instance automatically attaches token
-        setUserName(`${res.data.firstName} ${res.data.lastName}`);
+        const res = await api.get("/profile");
+        setUserName(`${res.data.first_name} ${res.data.last_name}`);
       } catch (err) {
         console.error("Failed to fetch user:", err);
       }
@@ -30,14 +32,10 @@ export default function UserDashboard() {
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
-  const handleProfileClick = () => {
-    navigate("/profile"); // Navigate to profile page
-  };
-
   const handleLogoutClick = () => {
-    localStorage.removeItem("token"); // remove auth token
+    localStorage.removeItem("token");
     sessionStorage.removeItem("token");
-    navigate("/signin"); // redirect to login
+    navigate("/signin");
   };
 
   return (
@@ -63,38 +61,17 @@ export default function UserDashboard() {
         `}
       </style>
 
-      <div className="text-white bg-[#080b3d] min-h-screen" style={{ fontFamily: "Poppins, sans-serif" }}>
+      <div
+        className="text-white bg-[#080b3d] min-h-screen"
+        style={{ fontFamily: "Poppins, sans-serif" }}
+      >
         {/* Header */}
-        <header className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between w-full">
-            <div
-              className="text-xl font-serif font-semibold tracking-tight"
-              style={{ fontSize: "1.25rem", lineHeight: "1.75rem" }}
-            >
-              Connected.
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleProfileClick}
-                className="inline-block bg-blue-500/90 px-3 py-1 rounded-full text-xs font-medium"
-              >
-                {userName || "Loading..."} {/* dynamic user name */}
-              </button>
-              <button
-                onClick={handleLogoutClick}
-                className="border border-white/30 px-3 py-1 rounded-full text-xs"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-          <div className="h-px bg-white/50 mt-4"></div>
-        </header>
+        <Header userName={userName} onLogout={handleLogoutClick} />
 
         {/* Main content */}
         <main className="min-h-[70vh] flex flex-col items-center relative px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-10 w-full max-w-[1020px]">
-            {[...Array(3)].map((_, idx) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-8 mt-10 max-w-[320px]">
+            {[...Array(1)].map((_, idx) => (
               <section
                 key={idx}
                 className="border border-white/40 p-6 sm:p-8 md:p-10 rounded-[2.75rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent)] min-h-[420px] sm:min-h-[480px] md:min-h-[420px] flex flex-col justify-between"
@@ -107,19 +84,18 @@ export default function UserDashboard() {
                       className="w-7 h-7 rounded-full bg-[#a3dd2f] flex items-center justify-center shadow hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-sky-300"
                       aria-label="Lamp Button"
                     >
-                      <img src="/lamp.png" alt="lamp icon" className="w-4 h-4" />
+                      <img src="images/lamp.png" alt="lamp icon" className="w-4 h-4" />
                     </button>
                   </div>
 
                   <h1 className="mt-5 text-xl leading-snug font-extrabold tracking-tight text-white">
-                    Improve Public Health And Well-Being,
+                    Software
                     <span className="block text-[--accent]">
-                      Provide Medical Care To Those In Need,
+                      Builds apps, websites, and systems.
                     </span>
-                    And Advance Medical Knowledge?
+                    Coding (Python, JavaScript), problem-solving, teamwork.
                   </h1>
                 </div>
-
                 <div className="mt-8 flex justify-center">
                   <div className="flex items-center gap-4">
                     <button
@@ -150,49 +126,36 @@ export default function UserDashboard() {
             ))}
           </div>
 
-          {/* Progress bar */}
-          <div className="mt-6 w-full max-w-xs mx-auto">
-            <div className="flex items-center justify-between text-xs text-white/80 mb-2">
-              <div className="font-semibold">Progress</div>
-              <div>30%</div>
-            </div>
-            <div className="w-full bg-white/20 rounded-full h-4 overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: "30%", background: "linear-gradient(90deg,var(--accent), #1cd3a2)" }}></div>
-            </div>
-          </div>
-
           {/* Action buttons */}
           <div className="mt-16 flex flex-col items-center space-y-5">
-            <button className="px-6 py-3 rounded-full font-semibold text-white bg-blue-500/90 hover:bg-[#146ff5]/90 hover:scale-105 transition-transform shadow-lg">
+            <button
+              onClick={() => navigate("/introduction")}
+              className="px-6 py-3 rounded-full font-semibold text-white bg-blue-500/90 hover:bg-[#146ff5]/90 hover:scale-105 transition-transform shadow-lg"
+            >
               Sort the Cards again
             </button>
+
             <button className="px-8 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-green-400 to-teal-500 hover:from-green-500 hover:to-teal-600 hover:scale-105 transition-transform shadow-lg">
               Download your profile
             </button>
-            <a href="#" className="text-white-400 font-medium underline hover:text-white-200 transition">
+
+            <a
+              href="#"
+              className="text-white-400 font-medium underline hover:text-white-200 transition"
+            >
               Email me the profile instead
             </a>
-            <a href="#" className="text-white-400 font-medium underline hover:text-white-200 transition">
+            <a
+              href="#"
+              className="text-white-400 font-medium underline hover:text-white-200 transition"
+            >
               I require an accessible PDF
             </a>
           </div>
         </main>
 
         {/* Footer */}
-        <footer className="py-6 mt-16 border-t border-white/20">
-          <div className="max-w-6xl mx-auto px-6 text-center">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-3">
-              <a href="#" className="text-sm font-medium underline hover:text-gray-300 transition">
-                Terms &amp; Conditions
-              </a>
-              <span className="hidden sm:inline">|</span>
-              <a href="#" className="text-sm font-medium underline hover:text-gray-300 transition">
-                Privacy Policy
-              </a>
-            </div>
-            <div className="text-sm text-gray-400">© 2025. All rights reserved.</div>
-          </div>
-        </footer>
+        <Footer />
 
         {/* Modal */}
         {isModalOpen && (
@@ -206,19 +169,43 @@ export default function UserDashboard() {
               </button>
 
               <div className="text-gray-500 text-base font-semibold">Do you care to</div>
-              <h3 className="text-2xl font-black leading-snug mt-1">Healthcare and <br /> Medicine Industry?</h3>
+              <h3 className="text-2xl font-black leading-snug mt-1">
+                Healthcare and <br /> Medicine Industry?
+              </h3>
 
-              <img src="/download.jpg" alt="Doctor" className="rounded-xl mt-4 w-full max-h-40 object-cover" />
+              <img
+                src="images/download.jpg"
+                alt="Doctor"
+                className="rounded-xl mt-4 w-full max-h-40 object-cover"
+              />
 
               <div className="mt-3 text-sm leading-relaxed">
                 <p>Your work will involve mitigating challenges such as:</p>
                 <p className="mt-2">
-                  <a href="#" className="text-blue-600 font-semibold hover:underline">Global Health Security</a><br />
-                  <span className="text-gray-700">Strengthening health systems to prevent and respond to global health threats.</span>
+                  <a
+                    href="#"
+                    className="text-blue-600 font-semibold hover:underline"
+                  >
+                    Global Health Security
+                  </a>
+                  <br />
+                  <span className="text-gray-700">
+                    Strengthening health systems to prevent and respond to global health
+                    threats.
+                  </span>
                 </p>
                 <p className="mt-3">
-                  <a href="#" className="text-blue-600 font-semibold hover:underline">Mental Health and Wellness Coaching</a><br />
-                  <span className="text-gray-700">Providing support to enhance mental well-being and cope with life challenges.</span>
+                  <a
+                    href="#"
+                    className="text-blue-600 font-semibold hover:underline"
+                  >
+                    Mental Health and Wellness Coaching
+                  </a>
+                  <br />
+                  <span className="text-gray-700">
+                    Providing support to enhance mental well-being and cope with life
+                    challenges.
+                  </span>
                 </p>
               </div>
             </div>
