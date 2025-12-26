@@ -11,12 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('work_types', function (Blueprint $table) {
+        Schema::create('common_departments', function (Blueprint $table) {
             $table->id();
-            $table->text('title');
-            $table->string('modal_title');
-            $table->string('modal_image')->nullable();
-            $table->text('modal_description')->nullable();
+            $table->string('name');
+            $table->text('details')->nullable();
             $table->timestamps();
         });
     }
@@ -26,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('work_types');
+        Schema::dropIfExists('common_departments');
     }
 };

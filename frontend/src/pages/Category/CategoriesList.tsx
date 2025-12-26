@@ -6,7 +6,7 @@ import api from "../../api/axios";
 interface Category {
   id: number;
   title: string;
-  modal_title: string;
+  name: string;
   modal_image?: string;
   modal_description?: string;
   created_at?: string;
@@ -31,7 +31,7 @@ export default function AdminCategories() {
 
   const fetchCategories = async () => {
     try {
-      const res = await api.get("/categories");
+      const res = await api.get("/industry");
       setCategories(res.data.data || res.data);
     } catch {
       alert("Failed to fetch categories");
@@ -44,7 +44,7 @@ export default function AdminCategories() {
     if (!confirm("Are you sure you want to delete this category?")) return;
 
     try {
-      await api.delete(`/categories/${id}`);
+      await api.delete(`/industry/${id}`);
       alert("Category deleted successfully");
       fetchCategories();
     } catch {
@@ -74,7 +74,7 @@ export default function AdminCategories() {
   const filtered = categories.filter(
     (c) =>
       c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.modal_title.toLowerCase().includes(search.toLowerCase())
+      c.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const totalRows = filtered.length;
@@ -89,7 +89,7 @@ export default function AdminCategories() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-5 gap-3">
         <h1 className="text-lg sm:text-2xl font-bold dark:text-gray-200">
-          Category Management
+          Category List
         </h1>
         <Link
           to="/dashboard/admin-categories/add"
@@ -186,7 +186,7 @@ export default function AdminCategories() {
                     {category.title}
                   </td>
                   <td className="px-6 py-4 border-r text-gray-700 dark:text-gray-300">
-                    {category.modal_title}
+                    {category.name}
                   </td>
                   <td className="px-6 py-4 border-r text-gray-700 dark:text-gray-300">
                     {category.modal_image ? (

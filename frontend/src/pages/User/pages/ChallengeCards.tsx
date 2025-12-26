@@ -1,42 +1,61 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../api/axios";
 import Header from "../Header";
 import Footer from "../Footer";
 import parse from "html-react-parser";
 
-interface WorkType {
+interface Industry {
   id: number;
   title: string;
-  modal_title?: string;
+  name?: string;
   modal_description?: string;
   modal_image?: string;
+  industry_id: number;
 }
 
 interface StoredWork {
-  workTypeId: number;
+  categoryId: number;
   answer: "yes" | "maybe";
 }
 
 export default function ChallengeCards() {
   const navigate = useNavigate();
-  const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
+  const [categories, setCategories] = useState<Industry[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [userName, setUserName] = useState<string>("");
-  const [activeWork, setActiveWork] = useState<WorkType | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // ✅ Loading state
+  const [profileName, setProfileUserName] = useState<string>("");
+  const [activeWork, setActiveWork] = useState<Industry | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
-  // ✅ Set page title
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollPercent, setScrollPercent] = useState(0);
+
   useEffect(() => {
     document.title = "Connected — Challenge Cards";
   }, []);
 
-  // ✅ Fetch logged-in user
   useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const userRes = await api.get("/profile");
+      setUserName(`${userRes.data.last_name}`);
+    } catch (err) {
+      console.error("Failed to fetch user:", err);
+    }
+  };
+
+  fetchUser();
+}, []);
+
+useEffect(() => {
     const fetchUser = async () => {
       try {
         const res = await api.get("/profile");
-        setUserName(`${res.data.first_name} ${res.data.last_name}`);
+        setProfileUserName(`${res.data.first_name || "User"} ${res.data.last_name || ""}`);
       } catch (err) {
         console.error("Failed to fetch user:", err);
       }
@@ -44,261 +63,285 @@ export default function ChallengeCards() {
     fetchUser();
   }, []);
 
-  // ✅ Fetch and filter work types
+
   useEffect(() => {
-    const fetchWorkTypes = async () => {
-      try {
-        const res = await api.get("/categories");
-        const data: WorkType[] = Array.isArray(res.data.data)
-          ? res.data.data
-          : res.data;
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get("/industry");
+      const data: Industry[] = Array.isArray(res.data.data)
+        ? res.data.data
+        : res.data;
 
-        const formatted: WorkType[] = data.map((item) => ({
-          ...item,
-          modal_image: item.modal_image
-            ? item.modal_image.startsWith("http")
-              ? item.modal_image
-              : `${import.meta.env.VITE_API_URL}/storage/${item.modal_image}`
-            : undefined,
-        }));
+      const storedRaw = localStorage.getItem("selectedWork");
+      const stored: StoredWork[] = storedRaw ? JSON.parse(storedRaw) : [];
+      const map: Record<number, "yes" | "maybe"> = {};
+      stored.forEach((w) => (map[w.categoryId] = w.answer));
 
-        const storedRaw = localStorage.getItem("selectedWork");
-        const stored: StoredWork[] = storedRaw ? JSON.parse(storedRaw) : [];
+      const filtered = data.filter((c) => map[c.id]);
 
-        const yesIds = stored
-          .filter((w: StoredWork) => w.answer === "yes")
-          .map((w: StoredWork) => w.workTypeId);
+      // ✅ IF 3 OR LESS → REDIRECT ONLY
+      if (filtered.length > 0 && filtered.length <= 3) {
+        const ids = filtered.map((c) => c.id);
 
-        const filtered = formatted.filter((w) => yesIds.includes(w.id));
-        setWorkTypes(filtered);
-      } catch (err) {
-        console.error("Failed to fetch work types:", err);
-      } finally {
-        setIsLoading(false); // ✅ Stop loading after fetch
+        await api.post("/initial-industry", { selected_ids: ids });
+
+        setShouldRedirect(true);
+
+        navigate("/selected-three-challenge-card", {
+          state: { selectedIds: ids },
+          replace: true,
+        });
+        return;
       }
-    };
 
-    fetchWorkTypes();
-  }, []);
-
-  // ✅ Logout
-  const handleLogoutClick = () => {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    navigate("/signin");
-  };
-
-  // ✅ Select/Unselect challenge (max 3)
-  const handleSelect = (id: number) => {
-    setSelected((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((s) => s !== id);
-      } else if (prev.length < 3) {
-        return [...prev, id];
-      } else {
-        alert("You can only select up to 3 challenges!");
-        return prev;
-      }
-    });
-  };
-
-  // ✅ Confirm
-  const handleConfirm = () => {
-    if (selected.length === 3) {
-      navigate("/selected-three-challenge-card", { state: { challenges: selected } });
-    } else {
-      alert("Please select exactly 3 challenges.");
+      // ❌ ONLY SET STATE IF PAGE SHOULD RENDER
+      setCategories(filtered);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  fetchCategories();
+}, [navigate]);
+
+
+  const handleLogoutClick = () => {
+    sessionStorage.clear();
+  window.location.href = "/signin";
+  };
+
+  const handleSelect = (id: number) => {
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((s) => s !== id);
+      if (prev.length < 3) return [...prev, id];
+      setShowLimitModal(true);
+      return prev;
+    });
+  };
+
+  const handleConfirm = async () => {
+    if (selected.length >= 1 && selected.length <= 3) {
+      try {
+        await api.post("/initial-industry", { selected_ids: selected });
+        navigate("/selected-three-challenge-card", { state: { selectedIds: selected } });
+      } catch (err) {
+        console.error(err);
+        alert("Failed to save selection.");
+      }
+    } else {
+      alert("Please select 1–3 challenges.");
+    }
+  };
+
+  const openModal = (work: Industry) => {
+    setActiveWork(work);
+    document.body.style.overflow = "hidden";
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+      setScrollPercent(0);
+    }
+  };
+
+  const closeModal = () => {
+    setActiveWork(null);
+    document.body.style.overflow = "auto";
+  };
+
+  const updateScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const scrollTop = el.scrollTop;
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    setScrollPercent(maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 0);
+  };
+ if (shouldRedirect) return null;
   return (
     <>
-      {/* Google Fonts */}
       <link
         href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Poppins:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
       />
-      <style>
-        {`
-          :root {
-            --bg: #0f1533;
-            --accent: #18e08a;
-          }
-          body {
-            font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, 'Helvetica Neue', Arial;
-            background-color: #080b3d;
-          }
-          .font-serif {
-            font-family: 'serif';
-          }
-        `}
-      </style>
+      <style>{`
+        body { font-family: 'Poppins', system-ui; background-color: #080b3d; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { scrollbar-width: none; }
+      `}</style>
 
       {isLoading ? (
-        // ✅ Loading overlay
-        <div className="fixed inset-0 bg-[#080b3d] flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-[#0b0f3f] flex items-center justify-center z-50">
           <div className="flex flex-col items-center gap-3 text-white">
-            <div className="w-8 h-8 border-4 border-white/30 border-t-[--accent] rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-white/30 border-t-green-400 rounded-full animate-spin"></div>
             <span className="text-sm text-white/70">Loading challenges...</span>
           </div>
         </div>
       ) : (
-        <div
-          className="text-white bg-[#080b3d] min-h-screen"
-          style={{ fontFamily: "Poppins, sans-serif" }}
-        >
-          {/* Header */}
-          <Header userName={userName} onLogout={handleLogoutClick} />
+        <div className="min-h-screen flex flex-col bg-[#0b0f3f] text-white">
+          <Header userName={profileName} onLogout={handleLogoutClick} />
 
-          {/* Main */}
-          <main className="flex-1 flex flex-col items-center px-4 sm:px-6 mt-6 w-full">
-            <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-center text-[--accent]">
-              Pick Your Top 3
-            </h2>
+          <main className="flex-grow flex flex-col items-center px-4 sm:px-6 py-16 max-w-7xl mx-auto w-full">
+            <div className="text-center mb-10">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3">
+                Alright {userName}!
+              </h1>
+              <p className="text-sm sm:text-base text-gray-300 max-w-3xl mx-auto">
+                Here are the challenges you're{" "}
+                <strong className="font-semibold text-white">highly interested</strong> to solve!
+              </p>
+            </div>
 
-            {/* Cards Grid */}
-            {workTypes.length === 0 ? (
-              <p className="text-gray-400 mt-10">No challenges found.</p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5 sm:gap-6 mt-10 max-w-7xl w-full justify-center">
-                {workTypes.map((work) => {
-                  const isSelected = selected.includes(work.id);
-                  return (
-                    <section
-                      key={work.id}
-                      className={`border p-4 rounded-2xl flex flex-col justify-between hover:scale-105 transition-transform duration-300
-                        w-full max-w-[180px] sm:max-w-[225px] min-h-[268px] sm:min-h-[300px] lg:min-h-[330px]
-                        ${
-                          isSelected
-                            ? "border-[var(--accent)] bg-[rgba(24,224,138,0.1)] shadow-[0_0_15px_rgba(24,224,138,0.3)]"
-                            : "border-white/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent)]"
-                        }`}
-                    >
+            <div className="w-full max-w-6xl mx-auto px-4 pb-10">
+  {categories.length > 0 ? (
+    Array.from({ length: Math.ceil(categories.length / 3) }).map((_, rowIndex) => {
+      const rowItems = categories.slice(rowIndex * 3, rowIndex * 3 + 3);
+      return (
+        // ✅ This row is flex and centered
+        <div key={rowIndex} className="flex justify-center gap-6 mb-6 flex-wrap">
+          {rowItems.map((work) => {
+            const isSelected = selected.includes(work.id);
+            return (
+              <div
+                key={work.id}
+                className={`bg-[#0e133b] border-2 rounded-3xl p-5 flex flex-col transition-transform duration-300 w-72
+                  ${isSelected ? "border-green-500 bg-green-900/20 shadow-lg" : "border-gray-400"}
+                  cursor-pointer`}
+                onClick={() => handleSelect(work.id)}
+              >
+                <div className="flex items-center justify-between mb-3">
+  {/* Left Text */}
+  <span className="text-sm font-medium text-gray-300">
+    {/* Do you care? */}
+  </span>
 
-                      <div>
-                        <div className="flex items-start justify-between">
-                          <div className="text-sky-300/70 text-xs font-semibold">
-                            Do you care to
-                          </div>
-                          <button
-                            onClick={() => setActiveWork(work)}
-                            className="w-6 h-6 rounded-full bg-[#a3dd2f] flex items-center justify-center shadow hover:scale-110 transition-transform"
-                          >
-                            <img
-                              src="/images/lamp.png"
-                              alt="lamp icon"
-                              className="w-3 h-3"
-                            />
-                          </button>
-                        </div>
+  {/* Right Lamp Button */}
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      openModal(work);
+    }}
+    className="bg-green-400 w-7 h-7 rounded-full flex items-center justify-center shadow-sm"
+  >
+    <img src="/images/lamp.png" alt="info" className="w-4 h-4" />
+  </button>
+</div>
 
-                        <div
-                          className="
-                            mt-3 
-                            leading-snug 
-                            font-bold 
-                            tracking-tight
-                            [&_h1]:text-[14px]     
-                            sm:[&_h1]:text-[16px]  
-                            md:[&_h1]:text-[18px]  
-                            lg:[&_h1]:text-[19px]  
-                            [&_h1]:leading-[1.5rem]
-                          "
-                        >
-                          {parse(work.title)}
-                        </div>
-                      </div>
 
-                      <div className="mt-4 flex justify-center">
-                        <button
-                          onClick={() => handleSelect(work.id)}
-                          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition
-                            ${
-                              isSelected
-                                ? "bg-[var(--accent)] text-black border-[var(--accent)]"
-                                : "bg-white/5 text-white/80 border-white/50 hover:bg-white/10"
-                            }`}
-                        >
-                          {isSelected ? "Selected" : "Select"}
-                        </button>
-                      </div>
-                    </section>
-                  );
-                })}
+                <p className="text-base sm:text-lg font-semibold text-white flex-1">
+                  {parse(work.title)}
+                </p>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelect(work.id);
+                  }}
+                  className={`mt-4 px-5 py-2 rounded-full text-sm font-semibold transition ${
+                    isSelected ? "bg-green-500 text-white" : "border border-green-500 text-white"
+                  }`}
+                >
+                  {isSelected ? "Shortlisted" : "Shortlist"}
+                </button>
               </div>
-            )}
+            );
+          })}
+        </div>
+      );
+    })
+  ) : (
+    <p className="text-center text-gray-400 py-10 w-full">No challenges found.</p>
+  )}
+</div>
 
-            {/* Confirm Button */}
+
+            <p className="text-center text-xs sm:text-sm text-gray-300 mt-12 max-w-2xl mx-auto leading-relaxed">
+              Select the <strong className="text-white">3 challenges you care MOST about</strong>.
+            </p>
+
             <div className="mt-10 mb-16">
               <button
-                disabled={selected.length !== 3}
                 onClick={handleConfirm}
-                className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-sm sm:text-base font-bold transition
-                  ${
-                    selected.length === 3
-                      ? "bg-[--accent] hover:bg-[#1cd3a2] text-black"
-                      : "bg-gray-500 cursor-not-allowed text-black"
-                  }`}
+                disabled={selected.length < 1 || selected.length > 3}
+                className={`px-8 py-3 rounded-full font-bold bg-blue-500 text-white flex items-center gap-2 transition ${
+                  selected.length >= 1 && selected.length <= 3
+                    ? "hover:bg-blue-600"
+                    : "opacity-50 cursor-not-allowed"
+                }`}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="3"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                Confirm
+                Launch 👉
               </button>
             </div>
           </main>
 
           <Footer />
 
-          {/* Modal */}
+          {/* SORT STYLE MODAL */}
           {activeWork && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-white text-black rounded-3xl max-w-sm w-full p-6 relative shadow-xl overflow-y-auto max-h-[90vh]">
-                <button
-                  onClick={() => setActiveWork(null)}
-                  className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200"
-                >
-                  ✕
-                </button>
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 sm:px-0">
+    <div className="relative w-full max-w-2xl sm:max-w-2xl">
 
-                <div className="text-gray-500 text-sm font-semibold">
-                  Do you care to
+      {/* Vertical Progress (hidden on mobile) */}
+      <div className="hidden sm:block absolute top-24 right-2 w-1 h-[75%] bg-gray-200 rounded-full overflow-hidden z-50">
+                  <div
+                    className="bg-blue-500 w-full transition-all duration-150"
+                    style={{ height: `${scrollPercent}%` }}
+                  ></div>
                 </div>
 
-                <h3
-                  className="text-xl font-black leading-snug mt-1"
-                  dangerouslySetInnerHTML={{
-                    __html: activeWork.modal_title || activeWork.title,
-                  }}
-                />
+                <div className="bg-white text-black rounded-[2rem] w-full p-6 relative shadow-xl">
+                  <button
+                    onClick={closeModal}
+                    className="absolute top-4 right-[0.5rem] w-9 h-9 bg-white border border-gray-300 rounded-full flex items-center justify-center text-gray-600 text-xl font-light hover:bg-gray-100 transition z-10"
+                  >
+                    ×
+                  </button>
 
-                {activeWork.modal_image && (
-                  <img
-                    src={activeWork.modal_image}
-                    alt={activeWork.title}
-                    className="rounded-xl mt-4 w-full max-h-44 object-cover border border-gray-200"
-                  />
-                )}
+                  <div>
+                    <div className="text-gray-500 text-base font-medium">Do you want to work in the</div>
+                    <h3 className="text-2xl font-black leading-snug mt-1 text-black">{activeWork.name}</h3>
 
-                {activeWork.modal_description && (
+                    {activeWork.modal_image && (
+                      <img
+                        src={activeWork.modal_image}
+                        className="rounded-xl mt-4 w-full max-h-40 object-cover border border-gray-200"
+                      />
+                    )}
+                  </div>
+
                   <div
-                    className="mt-3 text-sm leading-relaxed text-gray-700"
-                    dangerouslySetInnerHTML={{
-                      __html: activeWork.modal_description,
-                    }}
+                    ref={scrollRef}
+                    onScroll={updateScroll}
+                    className="mt-4 text-sm leading-relaxed text-gray-700 overflow-y-auto hide-scrollbar"
+                    style={{ maxHeight: "200px", paddingRight: "8px" }}
+                    dangerouslySetInnerHTML={{ __html: activeWork.modal_description || "" }}
                   />
-                )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Limit Modal */}
+          {showLimitModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-[#0b0f3f] border-2 border-green-400 text-white rounded-3xl max-w-sm w-full p-6 relative">
+                <button
+                  onClick={() => setShowLimitModal(false)}
+                  className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20"
+                >
+                  X
+                </button>
+                <h3 className="text-xl font-bold text-green-400 mb-2">Selection Limit Reached</h3>
+                <p className="text-gray-300 text-sm">
+                  You can only select up to 3 challenges. Deselect one to choose another.
+                </p>
+                <div className="mt-5 flex justify-end">
+                  <button
+                    onClick={() => setShowLimitModal(false)}
+                    className="px-5 py-2 bg-green-400 text-black rounded-full font-bold text-sm hover:bg-green-500"
+                  >
+                    OK
+                  </button>
+                </div>
               </div>
             </div>
           )}

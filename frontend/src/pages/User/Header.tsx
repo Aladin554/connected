@@ -1,4 +1,3 @@
-// E:\connectedreact\connected\frontend\src\pages\User\Header.tsx
 import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
@@ -14,31 +13,39 @@ export default function Header({ userName, onLogout }: HeaderProps) {
   };
 
   return (
-    <header className="max-w-7xl mx-auto px-6 py-4">
-      <div className="flex items-center justify-between w-full">
+    <header className="bg-transparent">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        
+        {/* Left side */}
         <div
           onClick={() => navigate("/user-dashboard")}
-          className="cursor-pointer text-xl font-serif font-semibold tracking-tight hover:text-gray-300 transition"
-          style={{ fontSize: "1.25rem", lineHeight: "1.75rem" }}
+          className="cursor-pointer text-xl tracking-tight hover:text-gray-300 transition" style={{ fontFamily: '"Abril Fatface"' }}
         >
           Connected.
         </div>
+
+        {/* Right side */}
         <div className="flex items-center gap-4">
           <button
             onClick={handleProfileClick}
-            className="inline-block bg-blue-500/90 px-3 py-1 rounded-full text-xs font-medium"
+            className="bg-blue-500/90 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-600 transition"
           >
             {userName || "Loading..."}
           </button>
+
           <button
             onClick={onLogout}
-            className="border border-white/30 px-3 py-1 rounded-full text-xs"
+            className="border border-white/30 px-3 py-1 rounded-full text-xs hover:bg-white/10 transition"
           >
             Logout
           </button>
         </div>
       </div>
-      <div className="h-px bg-white/50 mt-4"></div>
+
+      {/* ✅ Border line under the content only (NOT full width) */}
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="h-px bg-white/30"></div>
+      </div>
     </header>
   );
 }

@@ -1,50 +1,39 @@
-// src/pages/Dashboard/SelectedChallenges.tsx
+// Updated SelectedChallenges component with decreased card width, smaller tag text, white color, and adjusted spacing
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "../../../api/axios";
 import Header from "../Header";
 import Footer from "../Footer";
+import parse from "html-react-parser";
 
-// Create an axios instance
-const api = axios.create({
-  baseURL: "/api",
-});
-
-api.interceptors.request.use(
-  (config) => {
-    const token = sessionStorage.getItem("token");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-interface WorkType {
+interface Industry {
   id: number;
-  title: string;
-  modal_title?: string;
-  modal_description?: string;
-  modal_image?: string;
+  name: string;
+  final_details?: string;
+}
+
+interface LocationState {
+  selectedIds: number[];
 }
 
 export default function SelectedChallenges() {
   const navigate = useNavigate();
   const location = useLocation();
   const [userName, setUserName] = useState<string>("");
-  const [selectedChallenges, setSelectedChallenges] = useState<WorkType[]>([]);
-  const [activeWork, setActiveWork] = useState<WorkType | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // ✅ Add loading state
+  const [profileName, setProfileUserName] = useState<string>("");
+  const [selectedChallenges, setSelectedChallenges] = useState<Industry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     document.title = "Connected — Selected Challenges";
   }, []);
 
-  // ✅ Fetch logged-in user
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const res = await api.get("/profile");
-        setUserName(`${res.data.first_name} ${res.data.last_name}`);
+        setUserName(`${res.data.last_name || ""}`);
       } catch (err) {
         console.error("Failed to fetch user:", err);
       }
@@ -52,173 +41,165 @@ export default function SelectedChallenges() {
     fetchUser();
   }, []);
 
-  // ✅ Load selected challenge IDs and fetch data
   useEffect(() => {
-    const stored = location.state?.challenges || JSON.parse(localStorage.getItem("selectedChallenges") || "[]");
-    if (stored.length) {
-      fetchSelectedChallenges(stored);
-    } else {
+    const fetchUser = async () => {
+      try {
+        const res = await api.get("/profile");
+        setProfileUserName(`${res.data.first_name || "User"} ${res.data.last_name || ""}`);
+      } catch (err) {
+        console.error("Failed to fetch user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    const selectedIds =
+      (location.state as LocationState)?.selectedIds ||
+      JSON.parse(localStorage.getItem("selectedChallenges") || "[]");
+
+    if (!selectedIds.length) {
       navigate("/challenges");
+      return;
     }
+
+    fetchSelectedChallenges(selectedIds);
   }, [location.state]);
 
   const fetchSelectedChallenges = async (ids: number[]) => {
     try {
-      setIsLoading(true); // ✅ start loading
-      const res = await api.get("/categories");
-      const allWorkTypes: WorkType[] = res.data.data || res.data;
+      setIsLoading(true);
+      const res = await api.get("/industry");
+      const all = res.data.data || res.data;
 
-      const formatted = allWorkTypes.map((item) => ({
-        ...item,
-        modal_image: item.modal_image
-          ? item.modal_image.startsWith("http")
-            ? item.modal_image
-            : `${import.meta.env.VITE_API_URL}/storage/${item.modal_image}`
-          : undefined,
+      const formatted = all.map((item: any) => ({
+        id: item.id,
+        name: item.name || item.title,
+        final_details: item.final_details || "",
       }));
 
-      const filtered = formatted.filter((work) => ids.includes(work.id));
-      setSelectedChallenges(filtered);
+      const filtered = formatted.filter((cat: Industry) => ids.includes(cat.id));
+      const ordered = ids
+        .map((id) => filtered.find((c) => c.id === id))
+        .filter(Boolean) as Industry[];
+
+      setSelectedChallenges(ordered);
       localStorage.setItem("selectedChallenges", JSON.stringify(ids));
     } catch (err) {
       console.error("Failed to fetch selected challenges:", err);
     } finally {
-      setIsLoading(false); // ✅ stop loading
+      setIsLoading(false);
     }
   };
 
   const handleLogoutClick = () => {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    navigate("/signin");
+    sessionStorage.clear();
+  window.location.href = "/signin";
+  };
+
+  const handleWatchDemo = () => {
+    alert("Watch Demo clicked! (Add video modal or redirect)");
+  };
+
+  const handleStartNext = () => {
+    navigate("/phases-instructions", {
+      state: { challengeIds: selectedChallenges.map((c) => c.id) },
+    });
   };
 
   return (
     <>
-      {/* Google Fonts */}
       <link
         href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Poppins:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
       />
-      <style>
-        {`
-          :root {
-            --bg: #0f1533;
-            --accent: #18e08a;
-          }
-          body {
-            font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, 'Helvetica Neue', Arial;
-            background-color: #080b3d;
-          }
-          .font-serif {
-            font-family: 'serif';
-          }
-        `}
-      </style>
-       {/* ✅ Loading Overlay */}
-      {isLoading && (
+
+      {isLoading ? (
         <div className="fixed inset-0 bg-[#080b3d] flex items-center justify-center z-50">
           <div className="flex flex-col items-center gap-3 text-white">
-            <div className="w-8 h-8 border-4 border-white/30 border-t-[--accent] rounded-full animate-spin"></div>
-            <span className="text-sm text-white/70">Loading...</span>
+            <div className="w-8 h-8 border-4 border-white/20 border-t-green-400 rounded-full animate-spin"></div>
+            <span className="text-sm text-white/70">Loading your passions...</span>
           </div>
         </div>
-      )}
+      ) : (
+        <div className="min-h-screen flex flex-col bg-[#080b3d] text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>
+          <Header userName={profileName} onLogout={handleLogoutClick} />
 
+           <main className="flex-1 flex flex-col items-center px-6 py-16 max-w-6xl mx-auto w-full">
+            <div className="text-center mb-8 sm:mb-10 -mt-4">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 mt-7">
+                Perfect {userName}! <span className="font-semibold">⭐</span>
+              </h1>
+
+              <p className="text-xs sm:text-sm md:text-base text-white max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-1">
+                Looks like you are <span className="text-white font-bold">VERY interested</span> to solve challenges related to
+                <span className="text-xl sm:text-2xl md:text-3xl mt-1 sm:mt-0">👇</span>
+              </p>
+            </div>
+
+            <div className="w-full max-w-6xl mx-auto px-4 py-10">
+  {/* Mobile: flex-col, Tablet+: horizontal scroll */}
+  <div className="flex flex-col sm:flex-row sm:justify-center sm:gap-6 md:flex-nowrap md:overflow-x-auto pb-2 scrollbar-hide">
+    {selectedChallenges.slice(0, 4).map((challenge, index) => (
       <div
-        className="text-white bg-[#080b3d] min-h-screen"
-        style={{ fontFamily: "Poppins, sans-serif" }}
+        key={challenge.id}
+        className="w-full sm:w-72 flex-shrink-0 bg-white/5 border-2 border-green-400 rounded-3xl p-5 flex flex-col backdrop-blur-xl shadow-md min-h-[220px] transition-all mx-auto sm:mx-0 mb-4 sm:mb-0"
       >
-        {/* Header */}
-        <Header userName={userName} onLogout={handleLogoutClick} />
+        {/* Card Header */}
+        <div className="flex items-center justify-between mb-2 -mt-3">
+          <span className="mt-2 text-lg sm:text-xl font-['Abril Fatface'] font-semibold text-white/90">
+            0{index + 1}.
+          </span>
+          <span className="bg-green-400/20 text-white text-[9px] font-semibold px-2.5 py-0.5 rounded-full border border-green-400/40 -mt-1">
+            Highly Interested
+          </span>
+        </div>
 
-        {/* Main */}
-        <main className="flex-1 flex flex-col items-center px-4 sm:px-6 mt-6 w-full">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[--accent] mt-8 mb-6">
-            Your Selected Challenges
-          </h2>
+        {/* Card Title */}
+        <div className="flex flex-col gap-2">
+  <h3 className="text-base sm:text-lg md:text-xl font-semibold text-white">
+    {challenge.name}
+  </h3>
 
-          {selectedChallenges.length === 0 && !isLoading ? (
-            <p className="text-gray-400 mt-6">No selected challenges found.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-4 w-full max-w-[1020px]">
-              {selectedChallenges.map((work) => (
-                <section
-                  key={work.id}
-                  onClick={() => navigate(`/phases-instructions`, { state: { work } })}
-                  className="border border-white/40 p-6 sm:p-8 rounded-[2.5rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent)] min-h-[420px] flex flex-col justify-between hover:scale-105 transition-transform cursor-pointer"
-                >
-                  <div>
-                    <div className="flex items-start justify-between">
-                      <div className="text-sky-300/80 text-base font-semibold">
-                        Do you care to
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveWork(work);
-                        }}
-                        className="w-7 h-7 rounded-full bg-[#a3dd2f] flex items-center justify-center shadow hover:scale-110 transition-transform"
-                        aria-label="Lamp Button"
-                      >
-                        <img src="/images/lamp.png" alt="lamp icon" className="w-4 h-4" />
-                      </button>
-                    </div>
+  <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
+    {challenge.final_details
+      ? parse(challenge.final_details)
+      : "You have shown interest to work in these industries."}
+  </p>
+</div>
 
-                    <h1
-                      className="mt-5 text-xl leading-snug font-extrabold tracking-tight text-white"
-                      dangerouslySetInnerHTML={{ __html: work.title }}
-                    />
-                  </div>
-                </section>
-              ))}
-            </div>
-          )}
-        </main>
-
-        <Footer />
-
-        {activeWork && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white text-black rounded-3xl max-w-sm w-full p-6 relative shadow-xl overflow-y-auto max-h-[90vh]">
-              <button
-                onClick={() => setActiveWork(null)}
-                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200"
-              >
-                ✕
-              </button>
-
-              <div className="text-gray-500 text-base font-semibold">
-                Do you care to
-              </div>
-
-              <h3
-                className="text-2xl font-black leading-snug mt-1"
-                dangerouslySetInnerHTML={{
-                  __html: activeWork.modal_title || activeWork.title,
-                }}
-              />
-
-              {activeWork.modal_image && (
-                <img
-                  src={activeWork.modal_image}
-                  alt={activeWork.title}
-                  className="rounded-xl mt-4 w-full max-h-40 object-cover border border-gray-200"
-                />
-              )}
-
-              {activeWork.modal_description && (
-                <div
-                  className="mt-3 text-sm leading-relaxed text-gray-700"
-                  dangerouslySetInnerHTML={{
-                    __html: activeWork.modal_description,
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        )}
       </div>
+    ))}
+  </div>
+</div>
+
+
+
+            <p className="text-center text-xs sm:text-sm md:text-base text-white mt-10 sm:mt-14 max-w-3xl mx-auto leading-relaxed">
+              This is super exciting! We just got to learn which type of industries you care to work in.
+              <br />
+              <strong className="text-white">Next we will identify, which types of role you are passionate about.</strong>
+            </p>
+
+            <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center w-full">
+              {/* <button
+                onClick={handleWatchDemo}
+                className="w-full sm:w-auto bg-purple-500 hover:bg-purple-400 text-white font-bold py-3 px-7 rounded-full shadow-md hover:-translate-y-0.5 transition-all"
+              >
+                Watch Demo ▶️
+              </button> */}
+              <button
+                onClick={handleStartNext}
+                className="w-full sm:w-auto bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-7 rounded-full shadow-md hover:-translate-y-0.5 transition-all"
+              >
+                Start Next Module 👉
+              </button>
+            </div>
+          </main>
+
+          <Footer />
+        </div>
+      )}
     </>
   );
 }

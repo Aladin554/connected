@@ -28,9 +28,8 @@ export default function SelectSpecificChallenge() {
   }, []);
 
   const handleLogoutClick = () => {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    navigate("/signin");
+    sessionStorage.clear();
+  window.location.href = "/signin";
   };
 
   const handleSelect = (id: number) => {

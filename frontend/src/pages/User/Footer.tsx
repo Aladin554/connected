@@ -1,7 +1,7 @@
 // E:\connectedreact\connected\frontend\src\pages\User\Footer.tsx
 export default function Footer() {
   return (
-    <footer className="py-6 mt-16 border-t border-white/20">
+    <footer className="py-6 mt-10 border-t border-white/20">
       <div className="max-w-6xl mx-auto px-6 text-center">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-3">
           <a href="#" className="text-sm font-medium underline hover:text-gray-300 transition">

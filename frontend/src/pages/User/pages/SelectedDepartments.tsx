@@ -4,66 +4,91 @@ import { useNavigate } from "react-router-dom";
 import api from "../../../api/axios";
 import Header from "../Header";
 import Footer from "../Footer";
+import Loader from "../../Loader/Loader";
+import parse from "html-react-parser";
+
+interface CommonDepartment {
+  id: number;
+  name: string;
+  details?: string;
+}
 
 export default function SelectedDepartments() {
   const navigate = useNavigate();
   const [userName, setUserName] = useState<string>("");
+  const [departments, setDepartments] = useState<CommonDepartment[]>([]);
+  const [expandedDeptIds, setExpandedDeptIds] = useState<Record<number, boolean>>(
+    {}
+  );
+  const [selectedDepts, setSelectedDepts] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ✅ Fetch user name
+  // Modal states
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showMinimumModal, setShowMinimumModal] = useState(false);
+
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get("/profile");
-        setUserName(`${res.data.first_name} ${res.data.last_name}`);
+        setIsLoading(true);
+        const userRes = await api.get("/profile");
+        setUserName(`${userRes.data.first_name} ${userRes.data.last_name}`);
+
+        const res = await api.get("/common-departments");
+        setDepartments(res.data.data || []);
       } catch (err) {
-        console.error("Failed to fetch user:", err);
+        console.error("Failed to fetch data:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchUser();
+    fetchData();
   }, []);
 
-  // ✅ Logout
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    navigate("/signin");
+  const toggleDept = (id: number) => {
+    setExpandedDeptIds(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // ✅ Accordion state (first open by default)
-  const [openSections, setOpenSections] = useState<{ [key: number]: boolean }>({
-    0: true, // first section open
-  });
+  // MAX 2 SELECTION LOGIC WITH MODAL
+  const toggleSelect = (id: number) => {
+    setSelectedDepts(prev => {
+      if (prev.includes(id)) {
+        // Unselect
+        return prev.filter(d => d !== id);
+      }
 
-  const toggleSection = (index: number) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [index]: !prev[index],
-    }));
+      if (prev.length >= 2) {
+        // Show modal instead of alert
+        setShowLimitModal(true);
+        return prev;
+      }
+
+      return [...prev, id];
+    });
   };
 
-  // ✅ Role data
-  const roles = [
-    {
-      title: "Patient Care Services",
-      description: `Deliver direct medical care and support to patients through various healthcare services, including emergency, surgical, and rehabilitative care.`,
-      details: `Provide direct patient care, diagnose medical conditions, and develop treatment plans to improve patient health outcomes.`,
-    },
-    {
-      title: "Nurse",
-      description: `Support physicians and patients through clinical care, medication administration, and ongoing patient education.`,
-      details: `Nurses play a key role in monitoring patient progress, ensuring treatment adherence, and improving healthcare outcomes.`,
-    },
-    {
-      title: "Pharmacist",
-      description: `Prepare and dispense medications, provide advice on drug interactions, and promote safe use of prescriptions.`,
-      details: `Pharmacists work closely with healthcare providers to ensure optimal medication therapy and patient safety.`,
-    },
-    {
-      title: "Therapist",
-      description: `Provide mental, physical, or occupational therapy to patients to improve health and functionality.`,
-      details: `Therapists help patients recover and enhance their quality of life through personalized treatment programs.`,
-    },
-  ];
+  const handleNext = async () => {
+    if (selectedDepts.length === 0) {
+      setShowMinimumModal(true);
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await api.post("/save-common-departments", {
+        common_department_id: selectedDepts,
+      });
+      navigate("/selected-data", { state: { selectedDepts } });
+    } catch (err) {
+      console.error("Failed to save selections:", err);
+      // Optional: add an error modal here if needed
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading) return <Loader message="Fetching data..." />;
 
   return (
     <>
@@ -72,109 +97,196 @@ export default function SelectedDepartments() {
         href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Poppins:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
       />
-      <style>
-        {`
-          :root {
-            --bg: #0f1533;
-            --accent: #18e08a;
-          }
-          body {
-            font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, 'Helvetica Neue', Arial;
-            background-color: #080b3d;
-          }
-          .font-serif {
-            font-family: 'serif';
-          }
-        `}
-      </style>
+      <style>{`
+        :root {
+          --bg: #0f1533;
+          --accent: #18e08a;
+        }
+        body {
+          font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, 'Helvetica Neue', Arial;
+          background-color: #080b3d;
+        }
+      `}</style>
 
-      <div
-        className="text-white bg-[#080b3d] min-h-screen"
-        style={{ fontFamily: "Poppins, sans-serif" }}
-      >
-        {/* Header */}
-        <Header userName={userName} onLogout={handleLogout} />
+      <div className="text-white bg-[#080b3d] min-h-screen flex flex-col">
+        <Header
+          userName={userName}
+          onLogout={() => {
+            localStorage.removeItem("token");
+            sessionStorage.removeItem("token");
+            navigate("/signin");
+          }}
+        />
 
-        {/* ✅ Main */}
-        <main className="flex-1 flex justify-center items-start px-4 py-6">
-          <div
-            className="w-full max-w-5xl rounded-2xl shadow-2xl text-white p-4 md:p-6 border border-white/10 transition-all duration-300"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(20,25,70,0.9) 0%, rgba(10,12,50,0.9) 50%, rgba(8,11,45,0.95) 100%)",
-            }}
-          >
-            <h1 className="text-2xl lg:text-3xl font-extrabold mb-1">
-              Now..
+        <main className="flex-1 flex flex-col items-center px-6 py-16 max-w-4xl mx-auto">
+          <div className="w-full max-w-5xl rounded-2xl p-6 border border-white/10 bg-gradient-to-b from-[#10153f] to-[#080b3d] shadow-2xl transition-all">
+            <h1 className="text-3xl md:text-4xl font-extrabold mb-2">
+              Common Departments
             </h1>
-
-            <p className="text-gray-300 mb-3 text-sm lg:text-sm leading-relaxed">
-              Let's identify whether you care to work in any of the following roles which are{" "}
-              <span className="font-semibold text-white">available across all</span>{" "}
-              your chosen industries.
+            <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed">
+              Click on a department to view details, or select it from the right
+              side.
             </p>
 
-            {/* Progress Bar */}
-            <div className="flex items-center gap-1.5 mb-4">
-              <div className="h-1 w-1/4 bg-lime-500 rounded"></div>
-              <div className="h-1 w-1/4 bg-gray-600 rounded"></div>
-              <div className="h-1 w-1/4 bg-gray-600 rounded"></div>
-              <div className="h-1 w-1/4 bg-gray-600 rounded"></div>
-            </div>
+            <div className="space-y-4">
+              {departments.length === 0 && (
+                <p className="text-gray-400">No common departments found.</p>
+              )}
 
-            {/* ✅ Roles Section */}
-            <div className="space-y-2">
-              {roles.map((role, i) => (
-                <div
-                  key={i}
-                  className="bg-gradient-to-r from-[#0b0e3d] via-[#10153f] to-[#0b0e3d] border border-gray-700 rounded-xl shadow-inner transition-all duration-300"
-                >
+              {departments.map(dept => {
+                const isExpanded = !!expandedDeptIds[dept.id];
+                const isSelected = selectedDepts.includes(dept.id);
+
+                return (
                   <div
-                    onClick={() => toggleSection(i)}
-                    className="flex items-center justify-between px-3 py-2 cursor-pointer select-none"
+                    key={dept.id}
+                    className={`rounded-2xl overflow-hidden border transition-all duration-300 ${
+                      isExpanded
+                        ? "border-lime-400 bg-[#0b1045]/90"
+                        : "border-white/8 bg-[#0b1045]/50"
+                    }`}
                   >
-                    <p
-                      className={`font-semibold text-md ${
-                        openSections[i] ? "text-lime-400" : "text-white"
+                    {/* Header */}
+                    <div
+                      className="flex items-center justify-between p-4 cursor-pointer select-none"
+                      onClick={() => toggleDept(dept.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-8 h-8 flex items-center justify-center rounded-md border ${
+                            isExpanded
+                              ? "border-lime-400 bg-[#0e1250]"
+                              : "border-white/8 bg-[#0e1250]"
+                          }`}
+                        >
+                          <span
+                            className={`font-semibold ${
+                              isExpanded ? "text-lime-300" : "text-white"
+                            }`}
+                          >
+                            {isExpanded ? "−" : "+"}
+                          </span>
+                        </div>
+                        <div className="font-semibold text-lg text-white">
+                          {dept.name}
+                        </div>
+                      </div>
+
+                      <div
+                        className="flex items-center gap-3"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <button
+                          className="text-xs bg-lime-500/10 hover:bg-lime-500/20 text-lime-300 font-semibold px-2 py-0.5 rounded-full transition"
+                          onClick={() => toggleDept(dept.id)}
+                        >
+                          {isExpanded ? "Hide" : "Details"}
+                        </button>
+
+                        <div
+                          onClick={() => toggleSelect(dept.id)}
+                          className={`w-5 h-5 rounded-full border-2 cursor-pointer flex items-center justify-center transition-all ${
+                            isSelected
+                              ? "border-lime-400 bg-lime-400/30"
+                              : "border-white/40 bg-transparent hover:border-lime-300"
+                          }`}
+                        >
+                          {isSelected && (
+                            <div className="w-5 h-5 rounded-full bg-lime-400"></div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => toggleSelect(dept.id)}
+                          className={`text-xs font-semibold px-3 py-1 rounded-full border transition ${
+                            isSelected
+                              ? "border-lime-400 text-lime-300 bg-lime-500/10 hover:bg-lime-500/20"
+                              : "border-white/20 text-gray-300 hover:bg-white/10"
+                          }`}
+                        >
+                          {isSelected ? "Selected" : "Select"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expandable Details */}
+                    <div
+                      className={`transition-[max-height] duration-400 ease-in-out overflow-hidden ${
+                        isExpanded ? "max-h-[2000px]" : "max-h-0"
                       }`}
                     >
-                      {openSections[i] ? "– " : "+ "}
-                      {role.title}
-                    </p>
-                    <input
-                      type="checkbox"
-                      onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking checkbox
-                      className="appearance-none w-4 h-4 border-2 border-lime-400 rounded-full checked:bg-lime-400 checked:border-lime-400 transition duration-200 cursor-pointer"
-                    />
-                  </div>
-
-                  {openSections[i] && (
-                    <div className="px-4 pb-3 text-sm text-gray-300">
-                      <p className="leading-snug mb-1">{role.description}</p>
-                      <p className="leading-snug">
-                        <span className="font-semibold text-white">
-                          Details:
-                        </span>{" "}
-                        {role.details}
-                      </p>
+                      <div className="p-4 border-t border-white/6 bg-[#0e1250]">
+                        {dept.details ? (
+                          <div className="text-gray-300 text-sm">
+                            {parse(dept.details)}
+                          </div>
+                        ) : (
+                          <p className="text-gray-400 text-sm">
+                            No details available.
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* ✅ Next Button */}
             <button
-              onClick={() => navigate("/selected-data")} // ✅ Change route as needed
-              className="w-full mt-4 bg-lime-400 hover:bg-lime-500 text-black font-semibold py-2 rounded-xl text-base flex items-center justify-center gap-2 transition-all duration-200"
+              onClick={handleNext}
+              disabled={isSubmitting}
+              className={`w-full py-3 rounded-xl text-lg font-bold mt-6 transition-all ${
+                isSubmitting
+                  ? "bg-gray-500 cursor-wait text-white/80"
+                  : "bg-lime-400 hover:bg-lime-500 text-black"
+              }`}
             >
-              Next <span className="text-lg">→</span>
+              {isSubmitting ? "Processing..." : "Next →"}
             </button>
           </div>
         </main>
 
-        {/* ✅ Footer */}
         <Footer />
+
+        {/* Selection Limit Modal */}
+        {showLimitModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-md">
+            <div className="bg-[#080b3d] border-2 border-lime-400 p-6 rounded-3xl shadow-xl max-w-sm w-full text-center">
+              <h3 className="text-xl font-bold text-lime-400 mb-2">
+                Selection Limit Reached
+              </h3>
+              <p className="text-gray-300 mb-4">
+                You can only select up to <strong>2</strong> common departments.
+              </p>
+              <button
+                onClick={() => setShowLimitModal(false)}
+                className="px-5 py-2 bg-lime-400 text-black font-semibold rounded-full hover:bg-lime-500 transition"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Minimum Selection Modal */}
+        {showMinimumModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-md">
+            <div className="bg-[#080b3d] border-2 border-lime-400 p-6 rounded-3xl shadow-xl max-w-sm w-full text-center">
+              <h3 className="text-xl font-bold text-lime-400 mb-2">
+                Selection Required
+              </h3>
+              <p className="text-gray-300 mb-4">
+                Please select at least <strong>one</strong> department to continue.
+              </p>
+              <button
+                onClick={() => setShowMinimumModal(false)}
+                className="px-5 py-2 bg-lime-400 text-black font-semibold rounded-full hover:bg-lime-500 transition"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

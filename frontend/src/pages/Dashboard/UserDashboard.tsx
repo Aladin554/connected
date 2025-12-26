@@ -1,216 +1,239 @@
-// src/pages/Dashboard/UserDashboard.tsx
+// src/pages/User/UserDashboard.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import Header from "../User/Header";
 import Footer from "../User/Footer";
+import Loader from "../Loader/Loader";
+
+interface Department {
+  id: number;
+  name: string;
+  details?: string;
+}
+
+interface IndustryGroup {
+  id: number;
+  industry: string;
+  sub_departments: Department[];
+}
+
+interface SubmittedAnswer {
+  id: number;
+  selected_option: string;
+  question: {
+    id: number;
+    title: string;
+    details?: string;
+  };
+}
 
 export default function UserDashboard() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userName, setUserName] = useState<string>("");
   const navigate = useNavigate();
 
-  // Set document title
+  const [userName, setUserName] = useState<string>("");
+  const [industries, setIndustries] = useState<IndustryGroup[]>([]);
+  const [commonDepartments, setCommonDepartments] = useState<Department[]>([]);
+  const [submittedAnswers, setSubmittedAnswers] = useState<SubmittedAnswer[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // --- Fetch user profile
   useEffect(() => {
-    document.title = "Connected — Challenge Cards";
+    api
+      .get("/profile")
+      .then((res) => setUserName(`${res.data.first_name} ${res.data.last_name}`))
+      .catch((err) => console.error("Profile fetch failed:", err));
   }, []);
 
-  // Fetch logged-in user's name
+  // --- Fetch dashboard data
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const res = await api.get("/profile");
-        setUserName(`${res.data.first_name} ${res.data.last_name}`);
+        setLoading(true);
+        const res = await api.get("/user-dashboard-data");
+
+        if (res.data.success) {
+          const industriesData = Array.isArray(res.data.data.industries) ? res.data.data.industries : [];
+          const submittedAnswersData = Array.isArray(res.data.data.submitted_answers)
+            ? res.data.data.submitted_answers
+            : [];
+          const commonDepartmentsData = Array.isArray(res.data.data.common_departments)
+            ? res.data.data.common_departments
+            : [];
+
+          if (industriesData.length === 0 || submittedAnswersData.length === 0) {
+            navigate("/introduction", { replace: true });
+            return;
+          }
+
+          setIndustries(industriesData);
+          setCommonDepartments(commonDepartmentsData);
+          setSubmittedAnswers(submittedAnswersData);
+        } else {
+          navigate("/introduction", { replace: true });
+        }
       } catch (err) {
-        console.error("Failed to fetch user:", err);
+        console.error("Error fetching dashboard data:", err);
+        navigate("/introduction", { replace: true });
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchUser();
-  }, []);
+    fetchDashboardData();
+  }, [navigate]);
 
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
+  // --- Core gradient colors (same as SelectedData)
+  const CORE_GRADIENTS = [
+    "from-[#00A651] to-[#006837]", // Green - Healthcare
+    "from-[#6A1B9A] to-[#4A148C]", // Purple - IT/Tech
+    "from-[#1E88E5] to-[#1565C0]", // Blue - Business/Finance
+    "from-[#FF6D00] to-[#E65100]", // Orange - Engineering
+  ];
 
-  const handleLogoutClick = () => {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    navigate("/signin");
+  // --- Map industries to gradient index
+  const getIndustryGradientIndex = (industryName: string): number => {
+    const name = industryName.toLowerCase();
+    if (name.includes("health") || name.includes("medicine") || name.includes("healthcare")) return 0;
+    if (name.includes("it") || name.includes("computer") || name.includes("technology") || name.includes("science"))
+      return 1;
+    if (name.includes("business") || name.includes("finance")) return 2;
+    if (name.includes("engineer")) return 3;
+    return -1; // fallback
   };
+
+  if (loading) return <Loader message="Fetching your dashboard..." />;
+
+  // --- Fallback counter for unknown industries
+  let fallbackIndex = 0;
 
   return (
     <>
-      {/* Google Fonts */}
       <link
         href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Poppins:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
       />
       <style>
         {`
-          :root {
-            --bg: #0f1533;
-            --accent: #18e08a;
-          }
           body {
             font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, 'Helvetica Neue', Arial;
             background-color: #080b3d;
           }
-          .font-serif {
-            font-family: 'serif';
-          }
         `}
       </style>
 
-      <div
-        className="text-white bg-[#080b3d] min-h-screen"
-        style={{ fontFamily: "Poppins, sans-serif" }}
-      >
-        {/* Header */}
-        <Header userName={userName} onLogout={handleLogoutClick} />
+      <div className="text-white bg-[#080b3d] min-h-screen flex flex-col">
+        <Header
+          userName={userName}
+          onLogout={() => {
+            sessionStorage.clear();
+            window.location.href = "/signin";
+          }}
+        />
 
-        {/* Main content */}
-        <main className="min-h-[70vh] flex flex-col items-center relative px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-8 mt-10 max-w-[320px]">
-            {[...Array(1)].map((_, idx) => (
-              <section
-                key={idx}
-                className="border border-white/40 p-6 sm:p-8 md:p-10 rounded-[2.75rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent)] min-h-[420px] sm:min-h-[480px] md:min-h-[420px] flex flex-col justify-between"
+        <main className="flex-grow flex justify-center items-start px-6 py-16">
+          <div className="w-full max-w-6xl rounded-2xl shadow-2xl p-8 border border-white/10 bg-[#0f1533]/60 backdrop-blur-md">
+            <h1 className="text-4xl font-extrabold mb-4">My Report</h1>
+            <p className="text-gray-300 mb-8 leading-relaxed">
+              Here’s a summary of your career interest selections, including common roles within each industry.
+            </p>
+
+            {/* Industries */}
+            {industries.length > 0 ? (
+              <div className="space-y-6">
+                {industries.map((group) => {
+                  const fixedIndex = getIndustryGradientIndex(group.industry);
+                  let gradient;
+                  if (fixedIndex !== -1) {
+                    gradient = CORE_GRADIENTS[fixedIndex];
+                    fallbackIndex = 0; // reset fallback
+                  } else {
+                    gradient = CORE_GRADIENTS[fallbackIndex % CORE_GRADIENTS.length];
+                    fallbackIndex++;
+                  }
+
+                  return (
+                    <div
+                      key={group.id}
+                      className={`rounded-2xl p-6 shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl bg-gradient-to-br ${gradient}`}
+                    >
+                      <h2 className="text-2xl font-extrabold mb-3">{group.industry}</h2>
+
+                      {group.sub_departments.length > 0 ? (
+                        <div className="flex flex-wrap gap-3 mt-3">
+                          {group.sub_departments.map((subDept) => (
+                            <span
+                              key={`${group.id}-${subDept.id}`}
+                              className="bg-white/20 px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm"
+                              title={subDept.details}
+                            >
+                              {subDept.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-200 text-sm italic">No sub-departments found.</p>
+                      )}
+
+                      {commonDepartments.length > 0 && (
+                        <div className="flex flex-wrap gap-3 mt-5 border-t border-white/20 pt-4">
+                          {commonDepartments.map((dept) => (
+                            <span
+                              key={`common-${dept.id}`}
+                              className="bg-white/10 px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm text-white/90"
+                              title={dept.details}
+                            >
+                              {dept.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-center text-gray-400">No industries found.</p>
+            )}
+
+            {/* Personality Highlights */}
+            {submittedAnswers.length > 0 && (
+              <div className="mt-10">
+                <h2 className="text-2xl font-bold mb-6">Personality Highlights</h2>
+                <div className="bg-white/10 rounded-2xl overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="text-left border-b border-white/20">
+                        <th className="px-4 py-3">Area</th>
+                        <th className="px-4 py-3">Preference</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {submittedAnswers.map((ans) => (
+                        <tr key={ans.id} className="border-b border-white/10">
+                          <td className="px-4 py-2">{ans.question?.title}</td>
+                          <td className="px-4 py-2">{ans.selected_option}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Restart Button */}
+            <div className="mt-10">
+              <button
+                onClick={() => navigate("/introduction")}
+                className="w-full bg-[#0055FF] hover:bg-[#0042cc] text-white font-semibold py-3 rounded-xl"
               >
-                <div>
-                  <div className="flex items-start justify-between">
-                    <div className="text-sky-300/80 text-base font-semibold">Do you care to</div>
-                    <button
-                      onClick={openModal}
-                      className="w-7 h-7 rounded-full bg-[#a3dd2f] flex items-center justify-center shadow hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-sky-300"
-                      aria-label="Lamp Button"
-                    >
-                      <img src="images/lamp.png" alt="lamp icon" className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <h1 className="mt-5 text-xl leading-snug font-extrabold tracking-tight text-white">
-                    Software
-                    <span className="block text-[--accent]">
-                      Builds apps, websites, and systems.
-                    </span>
-                    Coding (Python, JavaScript), problem-solving, teamwork.
-                  </h1>
-                </div>
-                <div className="mt-8 flex justify-center">
-                  <div className="flex items-center gap-4">
-                    <button
-                      className="flex items-center justify-center w-14 h-14 rounded-2xl border border-white/60 bg-white/5 text-white/80 text-xl font-bold hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-300"
-                      aria-label="Maybe"
-                    >
-                      ?
-                    </button>
-                    <button
-                      className="flex items-center justify-center w-14 h-14 rounded-2xl border border-white/60 bg-white/5 hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
-                      aria-label="No"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                    <button
-                      className="flex items-center justify-center w-14 h-14 rounded-2xl border border-white/60 bg-white/5 hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[--accent]"
-                      aria-label="Yes"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-[--accent]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </section>
-            ))}
-          </div>
-
-          {/* Action buttons */}
-          <div className="mt-16 flex flex-col items-center space-y-5">
-            <button
-              onClick={() => navigate("/introduction")}
-              className="px-6 py-3 rounded-full font-semibold text-white bg-blue-500/90 hover:bg-[#146ff5]/90 hover:scale-105 transition-transform shadow-lg"
-            >
-              Sort the Cards again
-            </button>
-
-            <button className="px-8 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-green-400 to-teal-500 hover:from-green-500 hover:to-teal-600 hover:scale-105 transition-transform shadow-lg">
-              Download your profile
-            </button>
-
-            <a
-              href="#"
-              className="text-white-400 font-medium underline hover:text-white-200 transition"
-            >
-              Email me the profile instead
-            </a>
-            <a
-              href="#"
-              className="text-white-400 font-medium underline hover:text-white-200 transition"
-            >
-              I require an accessible PDF
-            </a>
+                Return to Dashboard
+              </button>
+            </div>
           </div>
         </main>
 
-        {/* Footer */}
         <Footer />
-
-        {/* Modal */}
-        {isModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white text-black rounded-3xl max-w-sm w-full p-6 relative shadow-xl overflow-y-auto max-h-[90vh]">
-              <button
-                onClick={closeModal}
-                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200"
-              >
-                ✕
-              </button>
-
-              <div className="text-gray-500 text-base font-semibold">Do you care to</div>
-              <h3 className="text-2xl font-black leading-snug mt-1">
-                Healthcare and <br /> Medicine Industry?
-              </h3>
-
-              <img
-                src="images/download.jpg"
-                alt="Doctor"
-                className="rounded-xl mt-4 w-full max-h-40 object-cover"
-              />
-
-              <div className="mt-3 text-sm leading-relaxed">
-                <p>Your work will involve mitigating challenges such as:</p>
-                <p className="mt-2">
-                  <a
-                    href="#"
-                    className="text-blue-600 font-semibold hover:underline"
-                  >
-                    Global Health Security
-                  </a>
-                  <br />
-                  <span className="text-gray-700">
-                    Strengthening health systems to prevent and respond to global health
-                    threats.
-                  </span>
-                </p>
-                <p className="mt-3">
-                  <a
-                    href="#"
-                    className="text-blue-600 font-semibold hover:underline"
-                  >
-                    Mental Health and Wellness Coaching
-                  </a>
-                  <br />
-                  <span className="text-gray-700">
-                    Providing support to enhance mental well-being and cope with life
-                    challenges.
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );

@@ -12,9 +12,14 @@ class Role extends Model
     protected $table = 'roles';
 
     protected $fillable = [
-        'name',
-        'guard_name',
-    ];
+    'name',
+    'guard_name',
+    'can_create_users',
+];
+
+protected $casts = [
+    'can_create_users' => 'boolean',
+];
 
     /**
      * A role can have many users

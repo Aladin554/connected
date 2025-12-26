@@ -1,20 +1,20 @@
-// src/pages/Dashboard/UserDashboard.tsx
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../../../api/axios";
 import Header from "../Header";
 import Footer from "../Footer";
 
-export default function UserDashboard() {
+export default function PickTop() {
   const [userName, setUserName] = useState<string>("");
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Set document title
+  const { selectedIds } = location.state || { selectedIds: [] };
+
   useEffect(() => {
     document.title = "Connected — Challenge Cards";
   }, []);
 
-  // Fetch logged-in user's name
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -24,14 +24,16 @@ export default function UserDashboard() {
         console.error("Failed to fetch user:", err);
       }
     };
-
     fetchUser();
   }, []);
 
   const handleLogoutClick = () => {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    navigate("/signin");
+    sessionStorage.clear();
+  window.location.href = "/signin";
+  };
+
+  const handleNextClick = () => {
+    navigate("/sort-three-challenge-card", { state: { selectedIds } });
   };
 
   return (
@@ -43,38 +45,31 @@ export default function UserDashboard() {
       />
       <style>
         {`
-          :root {
-            --bg: #0f1533;
-            --accent: #18e08a;
-          }
-          body {
-            font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, 'Helvetica Neue', Arial;
-            background-color: #080b3d;
-          }
-          .font-serif {
-            font-family: 'serif';
-          }
+          :root { --bg: #0f1533; --accent: #18e08a; }
+          body { font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, 'Helvetica Neue', Arial; background-color: #080b3d; }
+          .font-serif { font-family: 'serif'; }
         `}
       </style>
 
-      <div
-        className="text-white bg-[#080b3d] min-h-screen"
-        style={{ fontFamily: "Poppins, sans-serif" }}
-      >
+      <div className="text-white bg-[#080b3d] min-h-screen flex flex-col" style={{ fontFamily: "Poppins, sans-serif" }}>
         {/* Header */}
         <Header userName={userName} onLogout={handleLogoutClick} />
 
         {/* Main content */}
-        <main className="flex flex-col items-center justify-center text-center px-6 py-20 min-h-[70vh]">
-          <h1 className="text-2xl sm:text-3xl font-extrabold mb-4">Nice job! ⭐️</h1>
+         <main className="flex-1 flex flex-col items-center px-6 py-16 text-center max-w-4xl mx-auto">
+          <h1 className="text-2xl sm:text-3xl font-extrabold mb-4">
+            Excellent! ⭐️
+          </h1>
+
           <p className="text-lg text-gray-300 max-w-2xl">
-            Now, take a look at the Challenges you liked the most and pick your top 3.
+            Now, take a look at the Challenges you're <span className="font-semibold text-white">highly interested</span> to solve!
           </p>
+
           <button
-            onClick={() => navigate("/sort-three-challenge-card")}
-            className="mt-8 bg-[var(--accent)] text-black font-semibold px-8 py-3 rounded-full shadow-lg hover:bg-green-400 transition transform hover:scale-105"
+            onClick={handleNextClick}
+            className="mt-8 w-full sm:w-auto bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-7 rounded-full flex items-center justify-center gap-2 shadow-md hover:-translate-y-0.5 transition-all"
           >
-            Pick Your Top 3 Challenges
+            See Cards👉
           </button>
         </main>
 

@@ -17,8 +17,16 @@ return new class extends Migration
             $table->string('last_name');
             $table->string('email')->unique();
             $table->integer('role_id');
+            $table->boolean('panel_status')->default(0);
+            $table->boolean('video_status')->default(0);
+            $table->boolean('data_range')->default(0); 
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('report_status')->default('0');
+            $table->boolean('report_notification')->default(0);
+            $table->timestamp('last_login_at')->nullable();
+            $table->timestamp('account_expires_at')->nullable();
+            $table->integer('max_cards')->nullable()->default(null);
             $table->rememberToken();
             $table->timestamps();
         });

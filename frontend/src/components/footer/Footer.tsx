@@ -1,9 +1,14 @@
 const Footer = () => {
     return (
-        <div className="text-center my-3 mt-10">
-            Designed by <a href="#" target="_blank" className="text-blue-600">Trustfolio</a>. 
-            
-            {/* Distributed by <a href="https://themewagon.com" target="_blank" className="text-blue-600">ThemeWagon</a> */}
+        <div className="text-center my-3 mt-10 text-gray-700 dark:text-gray-300">
+            Designed by{" "}
+            <a 
+                href="#" 
+                target="_blank" 
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+            >
+                Trustfolio
+            </a>.
         </div>
     );
 };

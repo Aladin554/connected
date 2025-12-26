@@ -1,160 +1,279 @@
-// src/components/Questionnaire.tsx
-import { useState } from "react";
+// src/pages/User/pages/Questionnaire.tsx
+import { useEffect, useState, useRef } from "react";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import api from "../../../api/axios";
 import Header from "../Header";
 import Footer from "../Footer";
+import Loader from "../../Loader/Loader";
+
+interface Question {
+  id: number;
+  title: string;
+  details: string;
+  first_option: string;
+  second_option: string;
+}
+
+interface SavedAnswer {
+  question_id: string | number;
+  selected_option: string;
+}
 
 export default function Questionnaire() {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<{ [key: number]: number | null }>({
-    1: null,
-    2: null,
-  });
 
-  const handleSelect = (question: number, option: number) => {
-    setSelected((prev) => ({ ...prev, [question]: option }));
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answerOrder, setAnswerOrder] = useState<number[]>([]);
+  const [selected, setSelected] = useState<{ [key: number]: number | null }>({});
+  const [scrollToQuestionId, setScrollToQuestionId] = useState<number | null>(
+    null
+  );
+
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("");
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // ✅ ID-based refs (IMPORTANT)
+  const questionRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  // ================= FETCH DATA =================
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        const userRes = await api.get("/profile");
+        setUserName(`${userRes.data.first_name} ${userRes.data.last_name}`);
+
+        const questionsRes = await api.get("/question-answers");
+        const fetchedQuestions: Question[] = questionsRes.data.data || [];
+        setQuestions(fetchedQuestions);
+
+        let savedAnswers: SavedAnswer[] = [];
+        try {
+          const savedRes = await api.get("/user-submitted-answers");
+          savedAnswers = savedRes.data.data || [];
+        } catch {}
+
+        const initialSelected: { [key: number]: number | null } = {};
+
+        fetchedQuestions.forEach((q) => {
+          const saved = savedAnswers.find(
+            (a) => Number(a.question_id) === q.id
+          );
+
+          if (saved) {
+            if (saved.selected_option === q.first_option)
+              initialSelected[q.id] = 1;
+            else if (saved.selected_option === q.second_option)
+              initialSelected[q.id] = 2;
+            else initialSelected[q.id] = null;
+          } else {
+            initialSelected[q.id] = null;
+          }
+        });
+
+        setSelected(initialSelected);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // ================= HANDLE SELECT =================
+  const handleSelect = (questionId: number, option: number) => {
+    setSelected((prev) => ({ ...prev, [questionId]: option }));
+
+    setAnswerOrder((prevOrder) => {
+      if (prevOrder.includes(questionId)) return prevOrder;
+
+      const newOrder = [...prevOrder, questionId];
+
+      setQuestions((prevQuestions) => {
+        const answered = newOrder
+          .map((id) => prevQuestions.find((q) => q.id === id))
+          .filter(Boolean) as Question[];
+
+        const unanswered = prevQuestions.filter(
+          (q) => !newOrder.includes(q.id)
+        );
+
+        return [...answered, ...unanswered];
+      });
+
+      // ✅ scroll by QUESTION ID (not index)
+      setScrollToQuestionId(questionId);
+      return newOrder;
+    });
   };
 
-  const handleSubmit = () => {
-    // Example navigation or logic
-    alert("✅ Your answers have been submitted!");
-    navigate("/next"); // Change path if needed
+  // ================= SCROLL AFTER RENDER =================
+  useEffect(() => {
+    if (!scrollToQuestionId) return;
+
+    const el = questionRefs.current[scrollToQuestionId];
+    if (el) {
+      el.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+
+    setScrollToQuestionId(null);
+  }, [questions, scrollToQuestionId]);
+
+  // ================= SUBMIT =================
+  const handleSubmit = async () => {
+    const unanswered = questions.filter((q) => selected[q.id] === null);
+    if (unanswered.length > 0) {
+      setShowWarningModal(true);
+      return;
+    }
+
+    try {
+      await api.post("/question-answers/submit", {
+        answers: questions.map((q) => ({
+          question_id: q.id,
+          selected_option:
+            selected[q.id] === 1 ? q.first_option : q.second_option,
+        })),
+      });
+
+      setShowSuccessModal(true);
+    } catch {
+      setShowWarningModal(true);
+    }
   };
 
-  const userName = "John Doe";
+  const totalQuestions = questions.length;
+  const answeredCount = Object.values(selected).filter((v) => v !== null).length;
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    navigate("/signin");
-  };
+  if (loading) return <Loader message="Fetching questions..." />;
 
   return (
     <>
-      {/* Google Fonts */}
       <link
         href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Poppins:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet"
       />
-      <style>
-        {`
-          :root {
-            --bg: #0f1533;
-            --accent: #18e08a;
-          }
-          body {
-            font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, 'Helvetica Neue', Arial;
-            background-color: #080b3d;
-          }
-          .font-serif {
-            font-family: 'serif';
-          }
-        `}
-      </style>
+      <style>{`
+        :root {
+          --bg: #0f1533;
+          --accent: #18e08a;
+        }
+        body {
+          font-family: 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, 'Helvetica Neue', Arial;
+          background-color: #080b3d;
+        }
+      `}</style>
 
-      <div
-        className="text-white bg-[#080b3d] min-h-screen"
-        style={{ fontFamily: "Poppins, sans-serif" }}
-      >
-        {/* Header */}
-        <Header userName={userName} onLogout={handleLogout} />
+      <div className="text-white bg-[#0a0f50] min-h-screen flex flex-col">
+        <Header
+          userName={userName}
+          onLogout={() => {
+            localStorage.clear();
+            navigate("/signin");
+          }}
+        />
 
-        {/* ✅ Main */}
-        <main className="flex-1 flex justify-center items-start px-4 py-6">
-          <div className="w-full max-w-3xl space-y-10 mt-6">
-            {/* Question 1 */}
-            <div className="bg-gradient-to-r from-[#0b0e3d] via-[#10153f] to-[#0b0e3d] p-6 rounded-xl shadow-inner border border-gray-700">
-              <p className="text-sm text-gray-400 mb-2">Question 01.</p>
-              <h2 className="text-2xl font-bold mb-4">
-                Importance of High Salary
-              </h2>
-              <p className="text-gray-300 mb-6">
-                Is receiving a high salary extremely important for your job
-                satisfaction? For example, would you prefer a career that offers
-                a higher salary over one that provides an average household
-                income?
+        <main className="flex-1 flex flex-col items-center px-6 py-16 items-start">
+          <div className="w-full max-w-4xl space-y-10 mt-6">
+          {questions.map((q, idx) => (
+            <motion.div
+              key={q.id}
+              ref={(el) => {
+                questionRefs.current[q.id] = el;
+              }}
+              className="p-8 rounded-2xl shadow-lg"
+              style={{
+                background: "linear-gradient(135deg, #0a104e, #3a3fc1)",
+              }}
+            >
+              <p className="text-sm mb-2">Question {idx + 1}</p>
+              <h2 className="text-2xl font-bold mb-4">{q.title}</h2>
+              <p className="mb-6">{q.details}</p>
+
+              {[1, 2].map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => handleSelect(q.id, opt)}
+                  className={`w-full mb-3 py-4 rounded-xl font-semibold transition
+                    ${
+                      selected[q.id] === opt
+                        ? "bg-lime-400 text-black"
+                        : "bg-white/20 hover:bg-white/30"
+                    }`}
+                >
+                  {opt === 1 ? q.first_option : q.second_option}
+                </button>
+              ))}
+            </motion.div>
+          ))}
+
+          <button
+            onClick={handleSubmit}
+            disabled={answeredCount < totalQuestions}
+            className={`w-full py-4 rounded-xl font-bold
+              ${
+                answeredCount === totalQuestions
+                  ? "bg-lime-400 text-black"
+                  : "bg-gray-400 text-gray-700"
+              }`}
+          >
+            Submit Answers ({answeredCount}/{totalQuestions})
+          </button>
+        </div>
+      </main>
+
+      <Footer />
+
+      {showWarningModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
+          <div className="bg-white text-black p-8 rounded-2xl">
+            <p>Please answer all questions.</p>
+            <button
+              onClick={() => setShowWarningModal(false)}
+              className="mt-4 px-6 py-2 bg-lime-400 rounded"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showSuccessModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-3xl border-2 border-lime-400 bg-white p-8 shadow-2xl font-inter">
+
+              {/* H1 – Inter Extra Bold */}
+              <h3 className="mb-3 text-2xl font-extrabold text-[#01da8b]">
+                Success!
+              </h3>
+
+              {/* Paragraph – Inter Regular */}
+              <p className="mb-6 text-gray-600 font-normal">
+                Your answers have been submitted successfully.
               </p>
-              <div className="flex flex-col gap-4">
-                <button
-                  className={`rounded-lg py-3 px-4 font-semibold transition-colors duration-200 ${
-                    selected[1] === 1
-                      ? "bg-lime-400 text-black"
-                      : "bg-gray-800 text-gray-200 hover:bg-gray-700"
-                  }`}
-                  onClick={() => handleSelect(1, 1)}
-                >
-                  Yes, I am highly money motivated.
-                </button>
-                <button
-                  className={`rounded-lg py-3 px-4 font-semibold transition-colors duration-200 ${
-                    selected[1] === 2
-                      ? "bg-lime-400 text-black"
-                      : "bg-gray-800 text-gray-200 hover:bg-gray-700"
-                  }`}
-                  onClick={() => handleSelect(1, 2)}
-                >
-                  Gosh no! I will still be happy with an average income if I
-                  like my job.
-                </button>
-              </div>
-            </div>
 
-            {/* Question 2 */}
-            <div className="bg-gradient-to-r from-[#0b0e3d] via-[#10153f] to-[#0b0e3d] p-6 rounded-xl shadow-inner border border-gray-700">
-              <p className="text-sm text-gray-400 mb-2">Question 02.</p>
-              <h2 className="text-2xl font-bold mb-4">
-                Importance of Job Security
-              </h2>
-              <p className="text-gray-300 mb-6">
-                Is long term job security a crucial factor for you to pursue a
-                career?
-              </p>
-              <div className="flex flex-col gap-4">
-                <button
-                  className={`rounded-lg py-3 px-4 font-semibold transition-colors duration-200 ${
-                    selected[2] === 1
-                      ? "bg-lime-400 text-black"
-                      : "bg-gray-800 text-gray-200 hover:bg-gray-700"
-                  }`}
-                  onClick={() => handleSelect(2, 1)}
-                >
-                  Yes, it’s important for me to feel stable and secure.
-                </button>
-                <button
-                  className={`rounded-lg py-3 px-4 font-semibold transition-colors duration-200 ${
-                    selected[2] === 2
-                      ? "bg-lime-400 text-black"
-                      : "bg-gray-800 text-gray-200 hover:bg-gray-700"
-                  }`}
-                  onClick={() => handleSelect(2, 2)}
-                >
-                  Not really, I prefer dynamic and changing opportunities.
-                </button>
-              </div>
-            </div>
-
-            {/* ✅ Timer and Submit Section */}
-            <div className="flex flex-col items-center text-center space-y-4 mt-8">
-              <div className="bg-blue-600 rounded-lg py-4 px-6 w-full max-w-md shadow-md">
-                <p className="text-2xl font-bold tracking-wider">05 : 03</p>
-                <p className="text-sm text-blue-100 mt-1">
-                  Urgency = Clarity! ⏳🌟 Let's do this!
-                </p>
-              </div>
-
+              {/* Button – No background, black border */}
               <button
-                onClick={handleSubmit}
-                className="mt-4 bg-lime-400 hover:bg-lime-500 text-black font-bold py-3 px-8 rounded-lg shadow-md transition-all duration-200"
+                onClick={() => navigate("/process-done")}
+                className="rounded-full border-2 border-black px-6 py-3 font-bold text-black transition"
               >
-                Submit
+                Continue
               </button>
+
             </div>
           </div>
-        </main>
 
-        {/* Footer */}
-        <Footer />
-      </div>
+        )}
+    </div>
     </>
   );
 }

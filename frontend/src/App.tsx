@@ -1,6 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css"; // required CSS
+
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
+import ForgotPassword from "./pages/AuthPages/ForgotPassword";
+import ResetPassword from "./pages/AuthPages/ResetPassword";
 import NotFound from "./pages/OtherPage/NotFound";
 import UserProfiles from "./pages/UserProfiles";
 import Videos from "./pages/UiElements/Videos";
@@ -18,15 +23,19 @@ import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RootRedirect from "./components/RootRedirect";
+
 import Home from "./pages/Dashboard/Home";
 import AdminUsers from "./pages/Admin/AdminUsers";
 import AdminUserForm from "./pages/Admin/AdminUserForm";
-import WorkType from "./pages/Admin/WorkType/WorkType";
-import WorkTypeForm from "./pages/Admin/WorkType/WorkTypeForm";
-import RootRedirect from "./components/RootRedirect";
-import UserDashboard from "./pages/Dashboard/UserDashboard"; // role 3 special dashboard
-import Profile from "./pages/Profile/EditProfile"; // role 3 Profile
-import Introduction from "./pages/User/pages/Introduction"; // ✅ add Introduction page
+import Industry from "./pages/Admin/Industry/Industry.tsx";
+import IndustryForm from "./pages/Admin/Industry/IndustryForm.tsx";
+import QuestionnaireAnswer from "./pages/Admin/QA/QuestionnaireAnswer.tsx";
+import QAForm from "./pages/Admin/QA/QAForm.tsx";
+
+import UserDashboard from "./pages/Dashboard/UserDashboard";
+import Profile from "./pages/Profile/EditProfile";
+import Introduction from "./pages/User/pages/Introduction";
 import Instructions from "./pages/User/pages/Instructions";
 import Tip from "./pages/User/pages/Tip";
 import Sort from "./pages/User/pages/Sort";
@@ -41,195 +50,117 @@ import SelectedDepartments from "./pages/User/pages/SelectedDepartments.tsx";
 import SelectedData from "./pages/User/pages/SelectedData.tsx";
 import QAInstructions from "./pages/User/pages/QAInstructions.tsx";
 import Questionnaire from "./pages/User/pages/Questionnaire.tsx";
+import QACompletion from "./pages/User/pages/QACompletion.tsx";
+
+import AdminDepartments from "./pages/Admin/Department/AdminDepartments.tsx";
+import AdminDepartmentForm from "./pages/Admin/Department/AdminDepartmentForm.tsx";
+import Report from "./pages/Admin/Report/Report.tsx";
+import ReportDetails from "./pages/Admin/Report/ReportDetails.tsx";
+import Departments from "./pages/Admin/CommonDepartment/Departments.tsx";
+import DepartmentForm from "./pages/Admin/CommonDepartment/DepartmentForm.tsx";
+import MyReport from "./pages/User/pages/MyReport.tsx";
+import IndustryData from "./pages/User/pages/IndustryData.tsx";
+import AdminSubDepartments from "./pages/Admin/SubDepartment/AdminSubDepartments.tsx";
+import AdminSubDepartmentForm from "./pages/Admin/SubDepartment/AdminSubDepartmentForm.tsx";
+import ChooseDashboard from "./components/auth/ChooseDashboard.tsx";
+
 
 export default function App() {
   return (
     <Router>
       <ScrollToTop />
-      <Routes>
-        {/* Root Redirect */}
-        <Route path="/" element={<RootRedirect />} />
 
-        {/* Auth Pages */}
+      {/* ToastContainer added at root so toast shows on any page */}
+      <ToastContainer
+  position="top-right"
+  autoClose={3000}
+  hideProgressBar
+  toastStyle={{ zIndex: 100000 }} // <-- make it very high
+/>
+
+
+      <Routes>
+        <Route path="/" element={<RootRedirect />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/choose-dashboard" element={<ProtectedRoute allowedRoles={[2]}><ChooseDashboard /></ProtectedRoute>}/>
 
-        {/* Special Dashboard for role 3 */}
+        {/* User routes */}
+        <Route path="/user-dashboard" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><UserDashboard /></ProtectedRoute>} />
+        <Route path="/industry-data" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><IndustryData /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><Profile /></ProtectedRoute>} />
         <Route
-          path="/user-dashboard"
-          element={
-            <ProtectedRoute allowedRoles={[3]}>
-              <UserDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute allowedRoles={[3]}>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
+            path="/my-report"
+            element={
+              <ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}>
+                <MyReport />
+              </ProtectedRoute>
+            }
+          />
+        <Route path="/introduction" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><Introduction /></ProtectedRoute>} />
+        <Route path="/instructions" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><Instructions /></ProtectedRoute>} />
+        <Route path="/tip" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><Tip /></ProtectedRoute>} />
+        <Route path="/sort-cards" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><Sort /></ProtectedRoute>} />
+        <Route path="/pick-top" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><PickTop /></ProtectedRoute>} />
+        <Route path="/sort-three-challenge-card" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><ChallengeCards /></ProtectedRoute>} />
+        <Route path="/selected-three-challenge-card" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><SelectedChallenges /></ProtectedRoute>} />
+        <Route path="/phases-instructions" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><SpecificChallenge /></ProtectedRoute>} />
+        <Route path="/select-specific-sort-three-challenge-card" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><SelectSpecificChallenge /></ProtectedRoute>} />
+        <Route path="/success-page" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><SuccessPage /></ProtectedRoute>} />
+        <Route path="/first-phases" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><OneSpecificChallenge /></ProtectedRoute>} />
+        <Route path="/secound-phases" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><SelectedDepartments /></ProtectedRoute>} />
+        <Route path="/selected-data" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><SelectedData /></ProtectedRoute>} />
+        <Route path="/qa-instructions" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><QAInstructions /></ProtectedRoute>} />
+        <Route path="/process-done" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><QACompletion /></ProtectedRoute>} />
+        <Route path="/questionnaire" element={<ProtectedRoute allowedRoles={[2, 3]} requireActivePanel={true}><Questionnaire /></ProtectedRoute>} />
 
-        {/* ✅ New Introduction route for role 3 */}
-        <Route
-          path="/introduction"
-          element={
-            <ProtectedRoute allowedRoles={[3]}>
-              <Introduction />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-  path="/instructions"
-  element={
-    <ProtectedRoute allowedRoles={[3]}> {/* adjust roles if needed */}
-      <Instructions />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/tip"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <Tip />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/sort-cards"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <Sort />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/pick-top"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <PickTop />
-    </ProtectedRoute>
-  }
-/>
- <Route path="/sort-three-challenge-card"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <ChallengeCards />
-    </ProtectedRoute>
-  }
-/>
- <Route path="/selected-three-challenge-card"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <SelectedChallenges />
-    </ProtectedRoute>
-  }
-/>
- <Route path="/phases-instructions"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <SpecificChallenge />
-    </ProtectedRoute>
-  }
-/>
- <Route path="/select-specific-sort-three-challenge-card"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <SelectSpecificChallenge />
-    </ProtectedRoute>
-  }
-/>
- <Route path="/success-page"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <SuccessPage />
-    </ProtectedRoute>
-  }
-/>
- <Route path="/first-phases"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <OneSpecificChallenge />
-    </ProtectedRoute>
-  }
-/>
- <Route path="/secound-phases"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <SelectedDepartments />
-    </ProtectedRoute>
-  }
-/>
- <Route path="/selected-data"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <SelectedData />
-    </ProtectedRoute>
-  }
-/>
- <Route path="/qa-instructions"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <QAInstructions />
-    </ProtectedRoute>
-  }
-/>
- <Route path="/questionnaire"
-  element={
-    <ProtectedRoute allowedRoles={[3]}>
-      <Questionnaire />
-    </ProtectedRoute>
-  }
-/>
-
-        {/* Dashboard Layout - Protected */}
-        <Route
-          path="/dashboard/*"
-          element={
-            <ProtectedRoute allowedRoles={[1, 2]}>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        >
-          {/* Default Dashboard */}
+        {/* Admin dashboard routes */}
+        <Route path="/dashboard/*" element={<ProtectedRoute allowedRoles={[1, 2]}><AppLayout /></ProtectedRoute>}>
           <Route index element={<Home />} />
-
-          {/* Misc Pages */}
           <Route path="profile" element={<UserProfiles />} />
           <Route path="calendar" element={<Calendar />} />
           <Route path="blank" element={<Blank />} />
-
-          {/* Forms */}
           <Route path="form-elements" element={<FormElements />} />
-
-          {/* Tables */}
           <Route path="basic-tables" element={<BasicTables />} />
-
-          {/* UI Elements */}
           <Route path="alerts" element={<Alerts />} />
           <Route path="avatars" element={<Avatars />} />
           <Route path="badges" element={<Badges />} />
           <Route path="buttons" element={<Buttons />} />
           <Route path="images" element={<Images />} />
           <Route path="videos" element={<Videos />} />
-
-          {/* Charts */}
           <Route path="line-chart" element={<LineChart />} />
           <Route path="bar-chart" element={<BarChart />} />
-
-          {/* Admin Pages */}
           <Route path="admin-users" element={<AdminUsers />} />
           <Route path="admin-users/add" element={<AdminUserForm />} />
           <Route path="admin-users/:id/edit" element={<AdminUserForm />} />
+          <Route path="users-report" element={<Report />} />
+          <Route path="reports/:id" element={<ReportDetails />} />
+          {/* Categories (Previously Departments) */}
+          <Route path="categories" element={<AdminDepartments />} />
+          <Route path="categories/add" element={<AdminDepartmentForm />} />
+          <Route path="categories/:id/edit" element={<AdminDepartmentForm />} />
 
-          <Route path="categories" element={<WorkType />} />
-          <Route path="categories/add" element={<WorkTypeForm />} />
-          <Route path="categories/:id/edit" element={<WorkTypeForm />} />
+          {/* Departments (Previously Sub-Departments) */}
+          <Route path="departments" element={<AdminSubDepartments />} />
+          <Route path="departments/add" element={<AdminSubDepartmentForm />} />
+          <Route path="departments/:id/edit" element={<AdminSubDepartmentForm />} />
+
+
+
+          <Route path="common-departments" element={<Departments />} />
+          <Route path="common-departments/add" element={<DepartmentForm />} />
+          <Route path="common-departments/:id/edit" element={<DepartmentForm />} />
+
+          <Route path="industry" element={<Industry />} />
+          <Route path="industry/add" element={<IndustryForm />} />
+          <Route path="industry/:id/edit" element={<IndustryForm />} />
+          <Route path="question-answers" element={<QuestionnaireAnswer />} />
+          <Route path="question-answers/add" element={<QAForm />} />
+          <Route path="question-answers/:id/edit" element={<QAForm />} />
         </Route>
 
-        {/* Fallback */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
