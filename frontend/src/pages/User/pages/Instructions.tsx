@@ -89,31 +89,33 @@ export default function Instructions() {
       >
         <Header userName={userName} onLogout={handleLogout} />
 
-        <main className="flex-1 flex flex-col items-center px-6 py-16 text-center max-w-4xl mx-auto">
+        <main className="flex-1 flex flex-col items-center px-6 py-8 sm:py-16 text-center max-w-4xl mx-auto text-sm md:text-base text-white">
 
-          {/* Title */}
-          <h1 className="text-4xl md:text-4xl font-extrabold mb-12 tracking-tight">
+  {/* Title */}
+  <h1 className="text-2xl md:text-3xl font-extrabold mb-4 tracking-tight">
             Instructions{" "}
-            <span className="text-4xl inline-block font-bold animate-[float_2s_ease-in-out_infinite]">
-              👇
-            </span>
+            <span className="inline-block font-bold animate-[float_2s_ease-in-out_infinite]">
+      👇
+    </span>
           </h1>
 
-          <p className="text-lg md:text-xl leading-relaxed text-white/90 max-w-3xl mx-auto mb-5 text-center">
-            <strong>First, let’s figure out the types of </strong>
-            <strong className="text-[#4da6ff] font-bold">CHALLENGES</strong>
-            <strong> in this world you deeply care about solving.</strong>
-            <span className="font-normal">
-              {" "}This will help us identify what type of work you find purpose in.
-            </span>
-          </p>
+  {/* Intro text */}
+  <p className="leading-relaxed text-white/90 max-w-3xl mx-auto mb-2">
+    <strong>First, let’s figure out the types of </strong>
+    <strong className="text-[#4da6ff] font-bold">CHALLENGES</strong>
+    <strong> in this world you deeply care about solving.</strong>
+    <span className="font-normal">
+      {" "}This will help us identify what type of work you find purpose in.
+    </span>
+  </p>
 
-          <p className="text-base md:text-lg text-white text-center mb-6">
-            Below is an example of a <strong>Challenge Card</strong> which you will find in the next step:
-          </p>
+  {/* Sentence above card */}
+  <p className="mb-3">
+    Below is an example of a <strong>Challenge Card</strong> which you will find in the next step:
+  </p>
 
-          {/* Example Card */}
-          <div className="mb-14">
+  {/* Example Card */}
+  <div className="mb-6">
             <section
               className="relative mx-auto w-55 sm:w-55 p-6 rounded-[2rem] border border-white/15 bg-white/5 backdrop-blur-xl shadow-lg"
               style={{ minHeight: "290px" }}
@@ -154,37 +156,38 @@ export default function Instructions() {
             </section>
           </div>
 
-          {/* Legend */}
-          <p className="text-base md:text-lg text-white max-w-2xl mx-auto mb-6">
-            For each card, select whether you are{" "}
-            <span className="text-green-400 font-bold">“Very Interested” ✓</span>{" "}
-            |{" "}
-            <span className="text-red-400 font-bold">“Not Interested” ✕</span>{" "}
-            |{" "}
-            <span className="text-white/70">“Not Sure?” ?</span>
-          </p>
+  {/* Legend */}
+  <p className="max-w-2xl mx-auto mb-2">
+    For each card, select whether you are{" "}
+    <span className="text-green-400 font-bold">“Very Interested” ✓</span>{" "}
+    |{" "}
+    <span className="text-red-400 font-bold">“Not Interested” ✕</span>{" "}
+    |{" "}
+    <span className="text-white/70">“Not Sure?” ?</span>
+  </p>
 
-          {/* Tip */}
-          <p className="text-sm md:text-base text-white max-w-2xl mx-auto mb-12">
-            Tip: You can see additional information about a card by clicking the{" "}
-            <strong className="inline-flex items-center gap-2">
-              lamp icon in the top corner of the card.
-              <button className="w-6 h-6 rounded-full bg-[#a3dd2f] shadow-md flex items-center justify-center animate-flashGlow">
-                <img src="/images/lamp.png" className="w-3.5 h-3.5" />
-              </button>
-            </strong>
-          </p>
+  {/* Tip */}
+  <p className="max-w-2xl mx-auto mb-5">
+    Tip: You can see additional information about a card by clicking the{" "}
+    <strong className="inline-flex items-center gap-2">
+      lamp icon in the top corner of the card.
+      <button className="w-6 h-6 rounded-full bg-[#a3dd2f] shadow-md flex items-center justify-center animate-flashGlow">
+        <img src="/images/lamp.png" className="w-3.5 h-3.5" />
+      </button>
+    </strong>
+  </p>
 
-          {/* Launch Button */}
-          <button
-            onClick={() => navigate("/sort-cards")}
-            className="w-full sm:w-auto bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-9 rounded-full shadow-md hover:-translate-y-0.5 transition-all"
-          >
-            Launch
-            <span className="text-xl group-hover:animate-bounce">🚀</span>
-          </button>
+  {/* Launch Button */}
+  <button
+    onClick={() => navigate("/sort-cards")}
+    className="w-full sm:w-auto bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-9 rounded-full shadow-md hover:-translate-y-0.5 transition-all"
+  >
+    Launch <span className="text-xl">🚀</span>
+  </button>
 
-        </main>
+</main>
+
+
 
         <Footer />
       </div>

@@ -139,7 +139,7 @@ export default function ReportDetails() {
                   <ul className="ml-5 space-y-3">
                     {industry.departments.map((dept) => (
                       <li key={dept.id}>
-                        <p className="font-medium text-gray-800 dark:text-gray-300">{dept.name}</p>
+                        {/* <p className="font-medium text-gray-800 dark:text-gray-300">{dept.name}</p> */}
                         {dept.sub_departments && dept.sub_departments.length > 0 && (
                           <ul className="ml-5 list-disc list-inside text-gray-700 dark:text-gray-400">
                             {dept.sub_departments.map((sub) => (

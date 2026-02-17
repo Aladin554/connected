@@ -26,7 +26,7 @@ export default function AdminUserForm() {
     email: "",
     roleId: isEdit ? "" : "3",
     password: "",
-    max_cards: "10",
+    max_cards: "50",
   });
 
   const [errors, setErrors] = useState({

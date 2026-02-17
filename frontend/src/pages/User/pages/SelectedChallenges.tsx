@@ -125,77 +125,70 @@ export default function SelectedChallenges() {
         <div className="min-h-screen flex flex-col bg-[#080b3d] text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>
           <Header userName={profileName} onLogout={handleLogoutClick} />
 
-           <main className="flex-1 flex flex-col items-center px-6 py-16 max-w-6xl mx-auto w-full">
-            <div className="text-center mb-8 sm:mb-10 -mt-4">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 mt-7">
-                Perfect {userName}! <span className="font-semibold">⭐</span>
-              </h1>
+           <main className="flex-1 flex flex-col items-center px-4 sm:px-6 md:px-12 py-8 sm:py-12 max-w-6xl mx-auto w-full">
+  <div className="text-center mb-4 sm:mb-6 -mt-2">
+    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 mt-4">
+      Perfect {userName}! <span className="font-semibold">⭐</span>
+    </h1>
 
-              <p className="text-xs sm:text-sm md:text-base text-white max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-1">
-                Looks like you are <span className="text-white font-bold">VERY interested</span> to solve challenges related to
-                <span className="text-xl sm:text-2xl md:text-3xl mt-1 sm:mt-0">👇</span>
-              </p>
-            </div>
+    <p className="text-[10px] sm:text-xs md:text-sm text-white max-w-full mx-auto flex items-center justify-center gap-1 whitespace-nowrap">
+  Looks like you are <span className="text-white font-bold">VERY interested</span> to solve challenges related to
+  <span className="text-sm sm:text-base md:text-lg">👇</span>
+</p>
 
-            <div className="w-full max-w-6xl mx-auto px-4 py-10">
-  {/* Mobile: flex-col, Tablet+: horizontal scroll */}
-  <div className="flex flex-col sm:flex-row sm:justify-center sm:gap-6 md:flex-nowrap md:overflow-x-auto pb-2 scrollbar-hide">
-    {selectedChallenges.slice(0, 4).map((challenge, index) => (
-      <div
-        key={challenge.id}
-        className="w-full sm:w-72 flex-shrink-0 bg-white/5 border-2 border-green-400 rounded-3xl p-5 flex flex-col backdrop-blur-xl shadow-md min-h-[220px] transition-all mx-auto sm:mx-0 mb-4 sm:mb-0"
-      >
-        {/* Card Header */}
-        <div className="flex items-center justify-between mb-2 -mt-3">
-          <span className="mt-2 text-lg sm:text-xl font-['Abril Fatface'] font-semibold text-white/90">
-            0{index + 1}.
-          </span>
-          <span className="bg-green-400/20 text-white text-[9px] font-semibold px-2.5 py-0.5 rounded-full border border-green-400/40 -mt-1">
-            Highly Interested
-          </span>
-        </div>
 
-        {/* Card Title */}
-        <div className="flex flex-col gap-2">
-  <h3 className="text-base sm:text-lg md:text-xl font-semibold text-white">
-    {challenge.name}
-  </h3>
-
-  <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
-    {challenge.final_details
-      ? parse(challenge.final_details)
-      : "You have shown interest to work in these industries."}
-  </p>
-</div>
-
-      </div>
-    ))}
   </div>
-</div>
 
+  <div className="w-full max-w-6xl mx-auto px-2 py-2">
+    <div className="flex flex-col sm:flex-row sm:justify-center sm:gap-3 md:flex-nowrap md:overflow-x-auto pb-1 scrollbar-hide">
+      {selectedChallenges.slice(0, 4).map((challenge, index) => (
+        <div
+          key={challenge.id}
+          className="w-full sm:w-64 flex-shrink-0 bg-white/5 border-2 border-green-400 rounded-3xl p-4 flex flex-col backdrop-blur-xl shadow-md min-h-[200px] transition-all mx-auto sm:mx-0 mb-3 sm:mb-0"
+        >
+          {/* Card Header */}
+          <div className="flex items-center justify-between mb-1 -mt-2">
+            <span className="mt-1 text-base sm:text-lg font-['Abril Fatface'] font-semibold text-white/90">
+              0{index + 1}.
+            </span>
+            <span className="bg-green-400/20 text-white text-[8px] font-semibold px-2 py-0.5  rounded-full border border-green-400/40 mt-1">
+              Highly Interested
+            </span>
+          </div>
 
+          {/* Card Title */}
+          <div className="flex flex-col gap-1">
+            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-white">
+              {challenge.name}
+            </h3>
 
-            <p className="text-center text-xs sm:text-sm md:text-base text-white mt-10 sm:mt-14 max-w-3xl mx-auto leading-relaxed">
-              This is super exciting! We just got to learn which type of industries you care to work in.
-              <br />
-              <strong className="text-white">Next we will identify, which types of role you are passionate about.</strong>
+            <p className="text-[10px] sm:text-xs text-white/80 leading-relaxed">
+              {challenge.final_details
+                ? parse(challenge.final_details)
+                : "You have shown interest to work in these industries."}
             </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
 
-            <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center w-full">
-              {/* <button
-                onClick={handleWatchDemo}
-                className="w-full sm:w-auto bg-purple-500 hover:bg-purple-400 text-white font-bold py-3 px-7 rounded-full shadow-md hover:-translate-y-0.5 transition-all"
-              >
-                Watch Demo ▶️
-              </button> */}
-              <button
-                onClick={handleStartNext}
-                className="w-full sm:w-auto bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-7 rounded-full shadow-md hover:-translate-y-0.5 transition-all"
-              >
-                Start Next Module 👉
-              </button>
-            </div>
-          </main>
+  <p className="text-center text-xs sm:text-sm md:text-base text-white sm:mt-8 max-w-3xl mx-auto leading-relaxed">
+    This is super exciting! We just got to learn which type of industries you care to work in.
+    <br />
+    <strong className="text-white">Next we will identify, which types of role you are passionate about.</strong>
+  </p>
+
+  <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center items-center w-full">
+    <button
+      onClick={handleStartNext}
+      className="w-full sm:w-auto bg-blue-500 hover:bg-blue-400 text-white font-bold py-2.5 px-6 rounded-full shadow-md hover:-translate-y-0.5 transition-all"
+    >
+      Start Next Module 👉
+    </button>
+  </div>
+</main>
+
 
           <Footer />
         </div>

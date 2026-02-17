@@ -64,7 +64,7 @@ export default function Introduction() {
 
     window.onYouTubeIframeAPIReady = () => {
       playerRef.current = new window.YT.Player("youtube-player", {
-        videoId: "uQZ3Whq5yAg",
+        videoId: "j_--q6GNxlA",
         playerVars: {
           autoplay: 1,
           controls: 0,
@@ -116,10 +116,10 @@ export default function Introduction() {
       <div className="min-h-screen flex flex-col text-white">
         <Header userName={profileName} onLogout={handleLogout} />
 
-        <main className="flex-1 flex flex-col items-center px-6 py-16 text-center max-w-4xl mx-auto">
-          <div className="max-w-3xl mx-auto space-y-8">
+        <main className="flex-1 flex flex-col items-center px-4 py-8 sm:py-16 text-center max-w-4xl mx-auto">
+          <div className="max-w-3xl mx-auto space-y-5">
 
-            <h1 className="text-3xl md:text-4xl font-bold flex justify-center gap-2">
+            <h1 className="text-2xl md:text-4xl font-bold flex justify-center gap-2">
               Hi {userName}! <span className="animate-bounce">👋</span>
             </h1>
 
@@ -146,10 +146,11 @@ export default function Introduction() {
 
               <button
                 onClick={() => setShowVideo(true)}
-                className="px-8 py-3 rounded-full font-extrabold bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-500 hover:to-purple-700 transition flex gap-2"
+                className="px-8 py-3 rounded-full font-extrabold bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-500 hover:to-purple-700 transition flex items-center justify-center gap-2 text-center"
               >
                 Watch Demo ▶️
               </button>
+
 
               <button
                 onClick={() => navigate("/instructions")}

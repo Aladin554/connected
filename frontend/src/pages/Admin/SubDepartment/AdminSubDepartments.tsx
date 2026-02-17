@@ -95,6 +95,29 @@ export default function AdminSubDepartments() {
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
   };
+const getPageNumbers = () => {
+  const pages: (number | string)[] = [];
+  const maxVisible = 5;
+
+  if (totalPages <= maxVisible + 2) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+
+    if (currentPage > 3) pages.push("...");
+
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    if (currentPage < totalPages - 2) pages.push("...");
+
+    pages.push(totalPages);
+  }
+
+  return pages;
+};
 
   const formatDate = (date?: string) =>
     date ? new Date(date).toISOString().split("T")[0] : "-";
@@ -351,19 +374,29 @@ export default function AdminSubDepartments() {
           >
             Previous
           </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
-            <button
-              key={num}
-              onClick={() => setCurrentPage(num)}
-              className={`px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg transition ${
-                num === currentPage
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-              }`}
-            >
-              {num}
-            </button>
-          ))}
+          {getPageNumbers().map((item, index) =>
+            item === "..." ? (
+              <span
+                key={index}
+                className="px-3 py-2 text-gray-500 dark:text-gray-400"
+              >
+                ...
+              </span>
+            ) : (
+              <button
+                key={item}
+                onClick={() => setCurrentPage(item as number)}
+                className={`px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg transition ${
+                  item === currentPage
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                }`}
+              >
+                {item}
+              </button>
+            )
+          )}
+
           <button
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
             disabled={currentPage === totalPages}

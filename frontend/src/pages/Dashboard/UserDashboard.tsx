@@ -31,80 +31,67 @@ interface SubmittedAnswer {
 export default function UserDashboard() {
   const navigate = useNavigate();
 
-  const [userName, setUserName] = useState<string>("");
+  const [userName, setUserName] = useState("");
   const [industries, setIndustries] = useState<IndustryGroup[]>([]);
   const [commonDepartments, setCommonDepartments] = useState<Department[]>([]);
   const [submittedAnswers, setSubmittedAnswers] = useState<SubmittedAnswer[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
 
-  // --- Fetch user profile
   useEffect(() => {
-    api
-      .get("/profile")
-      .then((res) => setUserName(`${res.data.first_name} ${res.data.last_name}`))
-      .catch((err) => console.error("Profile fetch failed:", err));
+    api.get("/profile").then((res) =>
+      setUserName(`${res.data.first_name} ${res.data.last_name}`)
+    );
   }, []);
 
-  // --- Fetch dashboard data
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         const res = await api.get("/user-dashboard-data");
 
-        if (res.data.success) {
-          const industriesData = Array.isArray(res.data.data.industries) ? res.data.data.industries : [];
-          const submittedAnswersData = Array.isArray(res.data.data.submitted_answers)
-            ? res.data.data.submitted_answers
-            : [];
-          const commonDepartmentsData = Array.isArray(res.data.data.common_departments)
-            ? res.data.data.common_departments
-            : [];
-
-          if (industriesData.length === 0 || submittedAnswersData.length === 0) {
-            navigate("/introduction", { replace: true });
-            return;
-          }
-
-          setIndustries(industriesData);
-          setCommonDepartments(commonDepartmentsData);
-          setSubmittedAnswers(submittedAnswersData);
-        } else {
+        if (!res.data.success) {
           navigate("/introduction", { replace: true });
+          return;
         }
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
+
+        const { industries, common_departments, submitted_answers } = res.data.data;
+
+        if (!industries?.length || !submitted_answers?.length) {
+          navigate("/introduction", { replace: true });
+          return;
+        }
+
+        setIndustries(industries);
+        setCommonDepartments(common_departments || []);
+        setSubmittedAnswers(submitted_answers || []);
+      } catch {
         navigate("/introduction", { replace: true });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboardData();
+    fetchData();
   }, [navigate]);
 
-  // --- Core gradient colors (same as SelectedData)
   const CORE_GRADIENTS = [
-    "from-[#00A651] to-[#006837]", // Green - Healthcare
-    "from-[#6A1B9A] to-[#4A148C]", // Purple - IT/Tech
-    "from-[#1E88E5] to-[#1565C0]", // Blue - Business/Finance
-    "from-[#FF6D00] to-[#E65100]", // Orange - Engineering
+    "from-[#00A651] to-[#006837]",
+    "from-[#6A1B9A] to-[#4A148C]",
+    "from-[#1E88E5] to-[#1565C0]",
+    "from-[#FF6D00] to-[#E65100]",
   ];
 
-  // --- Map industries to gradient index
-  const getIndustryGradientIndex = (industryName: string): number => {
-    const name = industryName.toLowerCase();
-    if (name.includes("health") || name.includes("medicine") || name.includes("healthcare")) return 0;
-    if (name.includes("it") || name.includes("computer") || name.includes("technology") || name.includes("science"))
-      return 1;
+  const getIndustryGradientIndex = (industry: string) => {
+    const name = industry.toLowerCase();
+    if (name.includes("health")) return 0;
+    if (name.includes("it") || name.includes("technology") || name.includes("science")) return 1;
     if (name.includes("business") || name.includes("finance")) return 2;
     if (name.includes("engineer")) return 3;
-    return -1; // fallback
+    return -1;
   };
 
   if (loading) return <Loader message="Fetching your dashboard..." />;
 
-  // --- Fallback counter for unknown industries
   let fallbackIndex = 0;
 
   return (
@@ -132,78 +119,113 @@ export default function UserDashboard() {
         />
 
         <main className="flex-grow flex justify-center items-start px-6 py-16">
-          <div className="w-full max-w-6xl rounded-2xl shadow-2xl p-8 border border-white/10 bg-[#0f1533]/60 backdrop-blur-md">
-            <h1 className="text-4xl font-extrabold mb-4">My Report</h1>
-            <p className="text-gray-300 mb-8 leading-relaxed">
-              Here’s a summary of your career interest selections, including common roles within each industry.
+          <div className="w-full max-w-6xl rounded-2xl p-4 sm:p-6 md:p-8 border border-white/10 shadow-2xl bg-[#0f1533]/60 backdrop-blur-md">
+
+            <h1 className="text-lg sm:text-2xl md:text-4xl font-extrabold mb-2">
+              My Report
+            </h1>
+
+            <p className="text-gray-300 mb-6 sm:mb-8 text-sm lg:text-base leading-relaxed">
+              Here’s a summary of your career interest selections.
             </p>
 
-            {/* Industries */}
-            {industries.length > 0 ? (
-              <div className="space-y-6">
-                {industries.map((group) => {
-                  const fixedIndex = getIndustryGradientIndex(group.industry);
-                  let gradient;
-                  if (fixedIndex !== -1) {
-                    gradient = CORE_GRADIENTS[fixedIndex];
-                    fallbackIndex = 0; // reset fallback
-                  } else {
-                    gradient = CORE_GRADIENTS[fallbackIndex % CORE_GRADIENTS.length];
-                    fallbackIndex++;
-                  }
+            {/* === INDUSTRY CARDS (MATCHED WITH SelectedData) === */}
+            <div className="space-y-5 sm:space-y-8">
+              {industries.map((group) => {
+                const fixedIndex = getIndustryGradientIndex(group.industry);
+                const gradient =
+                  fixedIndex !== -1
+                    ? CORE_GRADIENTS[fixedIndex]
+                    : CORE_GRADIENTS[fallbackIndex++ % 4];
 
-                  return (
-                    <div
-                      key={group.id}
-                      className={`rounded-2xl p-6 shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl bg-gradient-to-br ${gradient}`}
-                    >
-                      <h2 className="text-2xl font-extrabold mb-3">{group.industry}</h2>
+                return (
+                  <div
+                    key={group.id}
+                    className={`
+                      rounded-2xl sm:rounded-3xl
+                      p-4 sm:p-6 md:p-7
+                      shadow-xl sm:shadow-2xl
+                      transition-all duration-300
+                      bg-gradient-to-br ${gradient}
+                      border border-white/20
+                      sm:hover:-translate-y-2 sm:hover:shadow-3xl
+                    `}
+                  >
+                    <h2 className="text-base sm:text-xl md:text-3xl font-extrabold mb-4 text-white">
+                      {group.industry}
+                    </h2>
 
-                      {group.sub_departments.length > 0 ? (
-                        <div className="flex flex-wrap gap-3 mt-3">
-                          {group.sub_departments.map((subDept) => (
-                            <span
-                              key={`${group.id}-${subDept.id}`}
-                              className="bg-white/20 px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm"
-                              title={subDept.details}
-                            >
-                              {subDept.name}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-200 text-sm italic">No sub-departments found.</p>
-                      )}
+                    {group.sub_departments.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 sm:gap-4">
+                        {group.sub_departments.map((sub) => (
+                          <span
+                            key={sub.id}
+                            className="
+                              bg-white/25
+                              px-3 sm:px-5
+                              py-1.5 sm:py-2
+                              rounded-full
+                              text-xs sm:text-sm md:text-base
+                              font-semibold
+                              backdrop-blur-sm
+                              border border-white/30
+                            "
+                            title={sub.details}
+                          >
+                            {sub.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-white/80 text-xs sm:text-sm italic">
+                        No specific roles selected.
+                      </p>
+                    )}
 
-                      {commonDepartments.length > 0 && (
-                        <div className="flex flex-wrap gap-3 mt-5 border-t border-white/20 pt-4">
+                    {commonDepartments.length > 0 && (
+                      <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-white/30">
+                        <p className="text-white/90 text-xs sm:text-sm font-medium mb-3">
+                          Common roles across your interests:
+                        </p>
+
+                        <div className="flex flex-wrap gap-2 sm:gap-4">
                           {commonDepartments.map((dept) => (
                             <span
-                              key={`common-${dept.id}`}
-                              className="bg-white/10 px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm text-white/90"
+                              key={dept.id}
+                              className="
+                                bg-white/15
+                                px-3 sm:px-5
+                                py-1.5 sm:py-2
+                                rounded-full
+                                text-xs sm:text-sm md:text-base
+                                font-medium
+                                backdrop-blur-sm
+                                border border-white/20
+                              "
                               title={dept.details}
                             >
                               {dept.name}
                             </span>
                           ))}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-center text-gray-400">No industries found.</p>
-            )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-            {/* Personality Highlights */}
+            {/* === PERSONALITY TABLE (UNCHANGED) === */}
             {submittedAnswers.length > 0 && (
               <div className="mt-10">
-                <h2 className="text-2xl font-bold mb-6">Personality Highlights</h2>
+                <h2 className="text-xl sm:text-2xl font-bold mb-6">
+                  Personality Highlights
+                </h2>
+
                 <div className="bg-white/10 rounded-2xl overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
-                      <tr className="text-left border-b border-white/20">
+                      <tr className="border-b border-white/20 text-left">
                         <th className="px-4 py-3">Area</th>
                         <th className="px-4 py-3">Preference</th>
                       </tr>
@@ -211,7 +233,7 @@ export default function UserDashboard() {
                     <tbody>
                       {submittedAnswers.map((ans) => (
                         <tr key={ans.id} className="border-b border-white/10">
-                          <td className="px-4 py-2">{ans.question?.title}</td>
+                          <td className="px-4 py-2">{ans.question.title}</td>
                           <td className="px-4 py-2">{ans.selected_option}</td>
                         </tr>
                       ))}
@@ -221,7 +243,6 @@ export default function UserDashboard() {
               </div>
             )}
 
-            {/* Restart Button */}
             <div className="mt-10">
               <button
                 onClick={() => navigate("/introduction")}

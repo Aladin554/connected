@@ -29,6 +29,7 @@ export default function ChallengeCards() {
   const [isLoading, setIsLoading] = useState(true);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [showNextModal, setShowNextModal] = useState(false);
 
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -113,13 +114,29 @@ useEffect(() => {
   };
 
   const handleSelect = (id: number) => {
-    setSelected((prev) => {
-      if (prev.includes(id)) return prev.filter((s) => s !== id);
-      if (prev.length < 3) return [...prev, id];
-      setShowLimitModal(true);
-      return prev;
-    });
-  };
+  setSelected((prev) => {
+    if (prev.includes(id)) {
+      // Deselect if already selected
+      return prev.filter((s) => s !== id);
+    }
+
+    if (prev.length < 2) {
+      // Add normally if less than 2 selected
+      return [...prev, id];
+    }
+
+    if (prev.length === 2) {
+      // On selecting 3rd item, trigger modal
+      setShowNextModal(true);
+      return [...prev, id]; // Still add the 3rd
+    }
+
+    // Should never reach here (because limit is 3)
+    return prev;
+  });
+};
+
+
 
   const handleConfirm = async () => {
     if (selected.length >= 1 && selected.length <= 3) {
@@ -188,7 +205,11 @@ useEffect(() => {
               <p className="text-sm sm:text-base text-gray-300 max-w-3xl mx-auto">
                 Here are the challenges you're{" "}
                 <strong className="font-semibold text-white">highly interested</strong> to solve!
+                <p>
+              Select the <strong className="text-white">3 challenges you care MOST about</strong>.
+            </p>
               </p>
+              
             </div>
 
             <div className="w-full max-w-6xl mx-auto px-4 pb-10">
@@ -251,14 +272,14 @@ useEffect(() => {
   ) : (
     <p className="text-center text-gray-400 py-10 w-full">No challenges found.</p>
   )}
+  <p className="text-center text-xs sm:text-sm text-gray-300 mt-4 max-w-2xl mx-auto leading-relaxed">
+              Select the <strong className="text-white">3 challenges you care MOST about</strong>.
+            </p>
 </div>
 
 
-            <p className="text-center text-xs sm:text-sm text-gray-300 mt-12 max-w-2xl mx-auto leading-relaxed">
-              Select the <strong className="text-white">3 challenges you care MOST about</strong>.
-            </p>
 
-            <div className="mt-10 mb-16">
+            <div className="mb-10">
               <button
                 onClick={handleConfirm}
                 disabled={selected.length < 1 || selected.length > 3}
@@ -345,6 +366,37 @@ useEffect(() => {
               </div>
             </div>
           )}
+          {showNextModal && (
+  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-[#0b0f3f] border-2 border-green-400 text-white rounded-3xl max-w-sm w-full p-6 relative">
+      <button
+        onClick={() => setShowNextModal(false)}
+        className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20"
+      >
+        X
+      </button>
+      <h3 className="text-xl font-bold text-green-400 mb-2">3 Challenges Selected!</h3>
+      <p className="text-gray-300 text-sm mb-4">
+        You have selected 3 challenges. What do you want to do next?
+      </p>
+      <div className="flex justify-between gap-4">
+        <button
+          onClick={handleConfirm}
+          className="px-5 py-2 bg-green-400 text-black rounded-full font-bold text-sm hover:bg-green-500 flex-1"
+        >
+          Next Step
+        </button>
+        <button
+          onClick={() => setShowNextModal(false)}
+          className="px-5 py-2 border border-green-400 text-white rounded-full font-bold text-sm flex-1"
+        >
+          Check Below
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
         </div>
       )}
     </>

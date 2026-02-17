@@ -203,7 +203,7 @@ export default function Questionnaire() {
                 <button
                   key={opt}
                   onClick={() => handleSelect(q.id, opt)}
-                  className={`w-full mb-3 py-4 rounded-xl font-semibold transition
+                  className={`w-full mb-3 px-4 py-3 rounded-xl font-semibold transition flex items-center justify-center text-center whitespace-normal break-words
                     ${
                       selected[q.id] === opt
                         ? "bg-lime-400 text-black"
@@ -213,6 +213,8 @@ export default function Questionnaire() {
                   {opt === 1 ? q.first_option : q.second_option}
                 </button>
               ))}
+
+
             </motion.div>
           ))}
 

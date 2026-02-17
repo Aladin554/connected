@@ -110,25 +110,28 @@ export default function SelectedData() {
           }}
         />
 
-        <main className="flex-grow flex justify-center items-start px-6 py-16">
-          <div className="w-full max-w-6xl rounded-2xl p-8 border border-white/10 shadow-2xl bg-[#0f1533]/60 backdrop-blur-md">
-            <h1 className="text-4xl font-extrabold mb-3">Your Selected Roles</h1>
-            <p className="text-gray-300 mb-8 text-sm lg:text-base leading-relaxed">
+        <main className="flex-grow flex justify-center items-start px-4 sm:px-6 py-10 sm:py-16">
+          <div className="w-full max-w-6xl rounded-2xl p-4 sm:p-6 md:p-8 border border-white/10 shadow-2xl bg-[#0f1533]/60 backdrop-blur-md">
+
+            {/* Title */}
+            <h1 className="text-lg sm:text-2xl md:text-4xl font-extrabold mb-2 sm:mb-3 whitespace-nowrap">
+              Your Selected Roles
+            </h1>
+
+            <p className="text-gray-300 mb-6 sm:mb-8 text-sm lg:text-base leading-relaxed">
               Here are the departments you selected for each industry.
             </p>
 
             {industries.length > 0 ? (
-              <div className="space-y-8">
+              <div className="space-y-5 sm:space-y-8">
                 {industries.map((group) => {
                   const fixedIndex = getIndustryGradientIndex(group.industry);
 
                   let gradient;
                   if (fixedIndex !== -1) {
                     gradient = CORE_GRADIENTS[fixedIndex];
-                    // Reset fallback counter when using a known color (optional, keeps it clean)
                     fallbackIndex = 0;
                   } else {
-                    // Cycle through the 4 colors for unknown industries
                     gradient = CORE_GRADIENTS[fallbackIndex % 4];
                     fallbackIndex++;
                   }
@@ -137,23 +140,36 @@ export default function SelectedData() {
                     <div
                       key={group.id}
                       className={`
-                        rounded-3xl p-7 shadow-2xl transition-all duration-300 
-                        transform hover:-translate-y-2 hover:shadow-3xl
+                        rounded-2xl sm:rounded-3xl
+                        p-4 sm:p-6 md:p-7
+                        shadow-xl sm:shadow-2xl
+                        transition-all duration-300
                         bg-gradient-to-br ${gradient}
                         border border-white/20
+                        sm:hover:-translate-y-2 sm:hover:shadow-3xl
                       `}
                     >
-                      <h2 className="text-2xl md:text-3xl font-extrabold mb-5 text-white">
+                      {/* Industry title */}
+                      <h2 className="text-base sm:text-xl md:text-3xl font-extrabold mb-4 sm:mb-5 text-white break-words">
                         {group.industry}
                       </h2>
 
                       {/* Selected Sub-departments */}
                       {group.sub_departments.length > 0 ? (
-                        <div className="flex flex-wrap gap-4">
+                        <div className="flex flex-wrap gap-2 sm:gap-4">
                           {group.sub_departments.map((subDept) => (
                             <span
                               key={`${group.id}-${subDept.id}`}
-                              className="bg-white/25 px-5 py-2 rounded-full text-sm md:text-base font-semibold backdrop-blur-sm border border-white/30"
+                              className="
+                                bg-white/25
+                                px-3 sm:px-5
+                                py-1.5 sm:py-2
+                                rounded-full
+                                text-xs sm:text-sm md:text-base
+                                font-semibold
+                                backdrop-blur-sm
+                                border border-white/30
+                              "
                               title={subDept.details}
                             >
                               {subDept.name}
@@ -161,18 +177,32 @@ export default function SelectedData() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-white/80 text-sm italic">No specific roles selected for this industry.</p>
+                        <p className="text-white/80 text-xs sm:text-sm italic">
+                          No specific roles selected for this industry.
+                        </p>
                       )}
 
                       {/* Common Departments */}
                       {commonDepartments.length > 0 && (
-                        <div className="mt-6 pt-5 border-t border-white/30">
-                          <p className="text-white/90 text-sm font-medium mb-3">Common roles across your interests:</p>
-                          <div className="flex flex-wrap gap-4">
+                        <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-white/30">
+                          <p className="text-white/90 text-xs sm:text-sm font-medium mb-3">
+                            Common roles across your interests:
+                          </p>
+
+                          <div className="flex flex-wrap gap-2 sm:gap-4">
                             {commonDepartments.map((dept) => (
                               <span
                                 key={`common-${dept.id}`}
-                                className="bg-white/15 px-5 py-2 rounded-full text-sm md:text-base font-medium backdrop-blur-sm border border-white/20"
+                                className="
+                                  bg-white/15
+                                  px-3 sm:px-5
+                                  py-1.5 sm:py-2
+                                  rounded-full
+                                  text-xs sm:text-sm md:text-base
+                                  font-medium
+                                  backdrop-blur-sm
+                                  border border-white/20
+                                "
                                 title={dept.details}
                               >
                                 {dept.name}
@@ -186,27 +216,39 @@ export default function SelectedData() {
                 })}
               </div>
             ) : (
-              <p className="text-center text-gray-400 text-lg">No industries or roles selected yet.</p>
+              <p className="text-center text-gray-400 text-sm sm:text-lg">
+                No industries or roles selected yet.
+              </p>
             )}
 
             {/* Action Buttons */}
-            <div className="mt-10 flex flex-col gap-4">
+            <div className="mt-8 sm:mt-10 flex flex-col gap-3 sm:gap-4">
               <button
                 onClick={() => navigate("/qa-instructions")}
-                className="w-full bg-[#0055FF] hover:bg-[#0042cc] text-white font-bold py-4 rounded-2xl text-lg transition duration-300 shadow-lg hover:shadow-xl"
+                className="
+                  w-full
+                  bg-[#0055FF] hover:bg-[#0042cc]
+                  text-white font-bold
+                  py-3 sm:py-4
+                  rounded-xl sm:rounded-2xl
+                  text-base sm:text-lg
+                  transition
+                  shadow-lg hover:shadow-xl
+                "
               >
                 Start Next Module 👉
               </button>
 
               <button
                 onClick={() => navigate("/sort-cards")}
-                className="w-full text-gray-400 hover:text-white text-center text-sm font-medium underline-offset-4 hover:underline transition"
+                className="w-full text-gray-400 hover:text-white text-center text-xs sm:text-sm font-medium underline-offset-4 hover:underline transition"
               >
                 ← Go back and change role selection
               </button>
             </div>
           </div>
         </main>
+
 
         <Footer />
       </div>
