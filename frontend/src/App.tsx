@@ -63,6 +63,7 @@ import IndustryData from "./pages/User/pages/IndustryData.tsx";
 import AdminSubDepartments from "./pages/Admin/SubDepartment/AdminSubDepartments.tsx";
 import AdminSubDepartmentForm from "./pages/Admin/SubDepartment/AdminSubDepartmentForm.tsx";
 import ChooseDashboard from "./components/auth/ChooseDashboard.tsx";
+import AdminAllowedIps from "./pages/Admin/Security/AdminAllowedIps.tsx";
 
 
 export default function App() {
@@ -152,6 +153,14 @@ export default function App() {
           <Route path="common-departments" element={<Departments />} />
           <Route path="common-departments/add" element={<DepartmentForm />} />
           <Route path="common-departments/:id/edit" element={<DepartmentForm />} />
+          <Route
+            path="admin-allowed-ips"
+            element={
+              <ProtectedRoute allowedRoles={[1]}>
+                <AdminAllowedIps />
+              </ProtectedRoute>
+            }
+          />
 
           <Route path="industry" element={<Industry />} />
           <Route path="industry/add" element={<IndustryForm />} />

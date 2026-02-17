@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdminAllowedIpController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CommonDepartmentController;
@@ -90,6 +91,7 @@ Route::middleware(['auth:sanctum', CheckReportStatus::class, 'admin.ip'])->group
     Route::apiResource('common-departments', CommonDepartmentController::class);
     Route::apiResource('departments', DepartmentController::class);
     Route::apiResource('sub-departments', SubDepartmentController::class);
+    Route::apiResource('admin-allowed-ips', AdminAllowedIpController::class);
     Route::get('common-departments-with-sub', [CommonDepartmentController::class, 'withSubDepartments']);
 
     // Reports (admin view all)
