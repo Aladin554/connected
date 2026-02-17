@@ -71,7 +71,7 @@ const AppSidebar: React.FC = () => {
               { name: "Category", path: "/dashboard/categories" },
               { name: "Department", path: "/dashboard/departments" },
               { name: "Common Department", path: "/dashboard/common-departments" },
-              { name: "Admin IP Security", path: "/dashboard/admin-allowed-ips" },
+              // { name: "Admin IP Security", path: "/dashboard/admin-allowed-ips" },
               { name: "Question", path: "/dashboard/question-answers" },
             ],
           },
