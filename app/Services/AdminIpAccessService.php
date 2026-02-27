@@ -64,11 +64,18 @@ class AdminIpAccessService
 
     public function isAllowed(string $clientIp): bool
     {
+        $entries = $this->allowedEntries();
+
+        // If no active IP rules are configured, do not block login/access.
+        if ($entries === []) {
+            return true;
+        }
+
         if (!filter_var($clientIp, FILTER_VALIDATE_IP)) {
             return false;
         }
 
-        foreach ($this->allowedEntries() as $entry) {
+        foreach ($entries as $entry) {
             if ($this->ipMatchesEntry($clientIp, $entry)) {
                 return true;
             }

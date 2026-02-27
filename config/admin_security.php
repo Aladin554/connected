@@ -38,7 +38,7 @@ $restrictedRoleIds = array_values(array_filter($restrictedRoleIds, static fn (in
 
 return [
     'restricted_role_ids' => $restrictedRoleIds,
-    'allowed_ips' => $parseCsv(env('ADMIN_ALLOWED_IPS', '110.54.224.169,112.198.75.123,203.87.50.200')),
+    'allowed_ips' => $parseCsv(env('ADMIN_ALLOWED_IPS', '')),
     'bypass_local_environment' => $parseBool(env('ADMIN_IP_BYPASS_LOCAL', 'false')),
     'bypass_loopback_ips' => $parseBool(env('ADMIN_IP_BYPASS_LOOPBACK', 'false')),
 ];
