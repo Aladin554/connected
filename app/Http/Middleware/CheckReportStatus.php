@@ -28,7 +28,7 @@ class CheckReportStatus
 
         // 2. FIXED 72-HOUR ACCOUNT EXPIRY FOR NORMAL USERS (role_id = 3)
         // This is now based on account_expires_at (set only on first login)
-        if ($user->role_id === 3) {
+        if ($user->role_id === 3 && !$user->isExpiryExempt()) {
             if ($user->account_expires_at && $user->account_expires_at->isPast()) {
                 $this->revokeToken($request);
 

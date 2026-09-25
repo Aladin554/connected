@@ -14,6 +14,12 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    /** The demo account is intentionally exempt from normal-user expiry. */
+    public function isExpiryExempt(): bool
+    {
+        return strcasecmp((string) $this->email, 'demo@gmail.com') === 0;
+    }
+
     protected $fillable = [
         'first_name',
         'last_name',
@@ -63,7 +69,9 @@ class User extends Authenticatable
     {
         $plainTextToken = Str::random(40);
 
-        $expiresAt = $this->role_id === 3 ? now()->addHours(72) : null;
+        $expiresAt = $this->role_id === 3 && !$this->isExpiryExempt()
+            ? now()->addHours(72)
+            : null;
 
         $token = $this->tokens()->create([
             'name'       => $name,
