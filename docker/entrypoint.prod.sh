@@ -43,6 +43,11 @@ if [ "${RUN_SEEDERS:-false}" = "true" ]; then
   php artisan db:seed --force --no-interaction
 fi
 
+# Ensure public/storage is always the Laravel symlink target.
+if [ -e public/storage ] && [ ! -L public/storage ]; then
+  rm -rf public/storage
+fi
+
 if [ ! -L public/storage ]; then
   php artisan storage:link || true
 fi
