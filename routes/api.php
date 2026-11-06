@@ -3,7 +3,9 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminAllowedIpController;
+use App\Http\Controllers\AiSettingsController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CareerReportController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CommonDepartmentController;
 use App\Http\Controllers\DashboardController;
@@ -98,6 +100,18 @@ Route::middleware(['auth:sanctum', CheckReportStatus::class, 'admin.ip'])->group
     Route::get('/reports', [ReportController::class, 'index']);
     Route::get('/reports/{id}', [ReportController::class, 'show']);
     Route::get('/show-ip', fn (Request $request) => $request->ip());
+
+    // Career Alignment Reports (superadmin and admin; role checked in the controller)
+    Route::get('/career-reports/{userId}', [CareerReportController::class, 'show']);
+    Route::post('/career-reports/{userId}/generate', [CareerReportController::class, 'generate']);
+    Route::put('/career-reports/{userId}', [CareerReportController::class, 'update']);
+    Route::post('/career-reports/{userId}/approve', [CareerReportController::class, 'approve']);
+    Route::get('/career-reports/{userId}/pdf', [CareerReportController::class, 'pdf']);
+
+    // AI settings (superadmin only; role checked in the controller)
+    Route::get('/ai-settings', [AiSettingsController::class, 'show']);
+    Route::put('/ai-settings', [AiSettingsController::class, 'update']);
+    Route::post('/ai-settings/test', [AiSettingsController::class, 'test']);
 
 });
 Route::get('/show-ip', function (Request $request) {

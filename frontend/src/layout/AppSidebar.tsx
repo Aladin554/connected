@@ -82,6 +82,15 @@ const AppSidebar: React.FC = () => {
       name: "Report",
       path: "/dashboard/users-report",
     },
+    ...(roleId === 1
+      ? [
+          {
+            icon: <PlugInIcon />,
+            name: "AI Settings",
+            path: "/dashboard/ai-settings",
+          },
+        ]
+      : []),
   ];
 
   const othersItems: NavItem[] = [];

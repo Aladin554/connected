@@ -56,6 +56,8 @@ import AdminDepartments from "./pages/Admin/Department/AdminDepartments.tsx";
 import AdminDepartmentForm from "./pages/Admin/Department/AdminDepartmentForm.tsx";
 import Report from "./pages/Admin/Report/Report.tsx";
 import ReportDetails from "./pages/Admin/Report/ReportDetails.tsx";
+import CareerReportGenerator from "./pages/Admin/Report/CareerReportGenerator.tsx";
+import AiSettings from "./pages/Admin/Settings/AiSettings.tsx";
 import Departments from "./pages/Admin/CommonDepartment/Departments.tsx";
 import DepartmentForm from "./pages/Admin/CommonDepartment/DepartmentForm.tsx";
 import MyReport from "./pages/User/pages/MyReport.tsx";
@@ -138,6 +140,8 @@ export default function App() {
           <Route path="admin-users/:id/edit" element={<AdminUserForm />} />
           <Route path="users-report" element={<Report />} />
           <Route path="reports/:id" element={<ReportDetails />} />
+          <Route path="reports/:id/career-report" element={<CareerReportGenerator />} />
+          <Route path="ai-settings" element={<ProtectedRoute allowedRoles={[1]}><AiSettings /></ProtectedRoute>} />
           {/* Categories (Previously Departments) */}
           <Route path="categories" element={<AdminDepartments />} />
           <Route path="categories/add" element={<AdminDepartmentForm />} />

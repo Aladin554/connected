@@ -100,7 +100,15 @@ export default function ReportDetails() {
           </Link>
         </div>
 
-        <h1 className="text-3xl font-bold dark:text-gray-100">User Report Details</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-3xl font-bold dark:text-gray-100">User Report Details</h1>
+          <Link
+            to={`/dashboard/reports/${id}/career-report`}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
+          >
+            Career Alignment Report
+          </Link>
+        </div>
 
         {/* User Info */}
         <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
