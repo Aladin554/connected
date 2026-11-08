@@ -22,25 +22,47 @@ class GenerateCareerReport implements ShouldQueue
     // Room for the first attempt plus one repair attempt.
     public int $timeout = 600;
 
-    public function __construct(public int $reportId)
+    /** @param string|null $request a counsellor's chat request; null builds a new report */
+    public function __construct(public int $reportId, public ?string $request = null)
     {
     }
 
     public function handle(CareerReportGenerator $generator): void
     {
-        $generator->generate(CareerReport::findOrFail($this->reportId));
+        $report = CareerReport::findOrFail($this->reportId);
+
+        $this->request === null
+            ? $generator->generate($report)
+            : $generator->revise($report, $this->request);
     }
 
     public function failed(?Throwable $exception): void
     {
+        $message = $exception?->getMessage() ?: 'Report generation failed.';
+
         Log::error('Career report generation failed', [
             'report_id' => $this->reportId,
-            'error' => $exception?->getMessage(),
+            'revision' => $this->request !== null,
+            'error' => $message,
         ]);
 
-        CareerReport::whereKey($this->reportId)->update([
+        $report = CareerReport::find($this->reportId);
+        if (!$report) {
+            return;
+        }
+
+        // A failed chat change keeps the report as it was and says so in the chat.
+        if ($this->request !== null && $report->content) {
+            $chat = $report->chat ?? [];
+            $chat[] = ['role' => 'assistant', 'text' => "Sorry, that change could not be made: {$message}", 'at' => now()->toIso8601String(), 'error' => true];
+            $report->update(['status' => CareerReport::STATUS_DRAFT, 'chat' => $chat]);
+
+            return;
+        }
+
+        $report->update([
             'status' => CareerReport::STATUS_FAILED,
-            'error_message' => $exception?->getMessage() ?: 'Report generation failed.',
+            'error_message' => $message,
         ]);
     }
 }

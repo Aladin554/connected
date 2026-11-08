@@ -48,9 +48,9 @@ class CareerReportController extends BaseApiController
 
         $inputs = $request->validate([
             'target_country' => 'required|string|max:100',
-            'education_level' => ['required', 'string', Rule::in(config('career_report.education_levels'))],
+            // Education level, academic background and English are hidden in the form for now.
+            'education_level' => ['nullable', 'string', Rule::in(config('career_report.education_levels'))],
             'study_level' => ['required', 'string', Rule::in(config('career_report.study_levels'))],
-            'report_date' => 'required|date',
             'academic_background' => 'nullable|string|max:2000',
             'english_proficiency' => 'nullable|string|max:255',
             'budget' => 'nullable|string|max:255',
@@ -77,14 +77,49 @@ class CareerReportController extends BaseApiController
         }
 
         $report->update($inputs + [
+            'report_date' => today(),
             'status' => CareerReport::STATUS_GENERATING,
             'error_message' => null,
             'generated_by' => Auth::id(),
+            'generation_started_at' => now(),
+            // A new report starts a new conversation.
+            'chat' => [],
         ]);
 
         GenerateCareerReport::dispatch($report->id);
 
         return $this->successResponse($this->payload($student), 'Report generation started', 202);
+    }
+
+    /** A counsellor asks the AI, in plain words, to change the finished report. */
+    public function revise(Request $request, int $userId): JsonResponse
+    {
+        $student = $this->student($userId);
+        if ($student instanceof JsonResponse) {
+            return $student;
+        }
+
+        $data = $request->validate(['message' => 'required|string|max:2000']);
+
+        $report = CareerReport::where('user_id', $student->id)->first();
+        if (!$report?->content || $report->status === CareerReport::STATUS_GENERATING) {
+            return $this->errorResponse('There is no finished report to change.', 409);
+        }
+
+        $message = trim($data['message']);
+        $chat = $report->chat ?? [];
+        $chat[] = ['role' => 'user', 'text' => $message, 'at' => now()->toIso8601String()];
+
+        $report->update([
+            'chat' => $chat,
+            'status' => CareerReport::STATUS_GENERATING,
+            'error_message' => null,
+            'generation_started_at' => now(),
+        ]);
+
+        GenerateCareerReport::dispatch($report->id, $message);
+
+        return $this->successResponse($this->payload($student), 'Change requested', 202);
     }
 
     public function update(Request $request, int $userId, CareerReportValidator $validator): JsonResponse
@@ -147,8 +182,12 @@ class CareerReportController extends BaseApiController
         }
 
         $report = CareerReport::where('user_id', $student->id)->first();
-        if ($report?->status !== CareerReport::STATUS_APPROVED) {
-            return $this->errorResponse('Approve the report before downloading the PDF.', 409);
+        $ready = in_array($report?->status, [CareerReport::STATUS_DRAFT, CareerReport::STATUS_APPROVED], true);
+        if (!$ready || !$report->content) {
+            return $this->errorResponse('There is no finished report to download.', 409);
+        }
+        if ($report->hasBlockingIssues()) {
+            return $this->errorResponse('Fix the listed errors before downloading the PDF.', 422);
         }
 
         $dompdf = new Dompdf((new Options())->setIsRemoteEnabled(false)->setDefaultFont('Helvetica'));
@@ -197,6 +236,7 @@ class CareerReportController extends BaseApiController
             ],
             'assessment' => $assessment,
             'system_data' => $report?->snapshot ?? $this->assessment->build($student),
+            'introduction' => CareerReport::introductionFor($report?->snapshot['first_name'] ?? (string) $student->first_name),
             'report' => $report,
             'options' => [
                 'target_countries' => config('career_report.target_countries'),
@@ -205,6 +245,23 @@ class CareerReportController extends BaseApiController
                 'match_levels' => config('career_report.match_levels'),
             ],
             'ai_configured' => $this->aiConfig->hasKey(),
+            'estimate_seconds' => $this->estimateSeconds(),
         ];
+    }
+
+    /** Average time of the last ten finished AI runs, for the progress message. */
+    private function estimateSeconds(): int
+    {
+        $durations = CareerReport::whereNotNull('generation_started_at')
+            ->whereNotNull('generated_at')
+            ->whereColumn('generated_at', '>', 'generation_started_at')
+            ->latest('generated_at')
+            ->limit(10)
+            ->get(['generation_started_at', 'generated_at'])
+            ->map(fn (CareerReport $r) => $r->generation_started_at->diffInSeconds($r->generated_at, true));
+
+        return $durations->isEmpty()
+            ? (int) config('career_report.default_estimate_seconds')
+            : (int) round($durations->avg());
     }
 }

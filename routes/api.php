@@ -106,6 +106,7 @@ Route::middleware(['auth:sanctum', CheckReportStatus::class, 'admin.ip'])->group
     Route::post('/career-reports/{userId}/generate', [CareerReportController::class, 'generate']);
     Route::put('/career-reports/{userId}', [CareerReportController::class, 'update']);
     Route::post('/career-reports/{userId}/approve', [CareerReportController::class, 'approve']);
+    Route::post('/career-reports/{userId}/revise', [CareerReportController::class, 'revise']);
     Route::get('/career-reports/{userId}/pdf', [CareerReportController::class, 'pdf']);
 
     // AI settings (superadmin only; role checked in the controller)

@@ -31,9 +31,11 @@ class CareerReport extends Model
         'snapshot',
         'content',
         'issues',
+        'chat',
         'error_message',
         'model',
         'generated_by',
+        'generation_started_at',
         'generated_at',
         'approved_by',
         'approved_at',
@@ -47,6 +49,8 @@ class CareerReport extends Model
         'snapshot' => 'array',
         'content' => 'array',
         'issues' => 'array',
+        'chat' => 'array',
+        'generation_started_at' => 'datetime',
         'generated_at' => 'datetime',
         'approved_at' => 'datetime',
     ];
@@ -54,6 +58,12 @@ class CareerReport extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** Section 1 is fixed text from config, never written by the AI. */
+    public static function introductionFor(string $firstName): string
+    {
+        return str_replace(':name', trim($firstName), (string) config('career_report.introduction'));
     }
 
     public function hasBlockingIssues(): bool

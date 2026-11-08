@@ -50,7 +50,6 @@ class CareerReportValidator
     private function checkRequiredText(array $content): void
     {
         $sections = [
-            'introduction' => 'Introduction',
             'final_recommendation_intro' => 'Final Recommendation introduction',
             'conclusion' => 'Conclusion',
         ];
@@ -199,7 +198,7 @@ class CareerReportValidator
 
     private function checkCountry(array $content, CareerReport $report): void
     {
-        $text = ($content['introduction'] ?? '') . ' ' . ($content['conclusion'] ?? '');
+        $text = ($content['final_recommendation_intro'] ?? '') . ' ' . ($content['conclusion'] ?? '');
         $aliases = [
             'United Kingdom' => ['United Kingdom', 'UK', 'Britain'],
             'United States' => ['United States', 'USA', 'US', 'America'],
@@ -212,13 +211,14 @@ class CareerReportValidator
             }
         }
 
-        $this->warning("Neither the Introduction nor the Conclusion mentions {$report->target_country}.");
+        $this->warning("Neither the Final Recommendation nor the Conclusion mentions {$report->target_country}.");
     }
 
     private function checkOptionalTopics(array $content, CareerReport $report): void
     {
+        // Section 1 is fixed text and older reports may still hold the AI's version.
         $body = $content;
-        unset($body['verification_notes']);
+        unset($body['introduction'], $body['verification_notes']);
         $text = json_encode($body, JSON_UNESCAPED_UNICODE);
 
         if (!$report->include_immigration

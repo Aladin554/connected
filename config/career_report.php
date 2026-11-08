@@ -107,6 +107,9 @@ return [
 
     'ai_efforts' => ['none', 'low', 'medium', 'high', 'xhigh', 'max'],
 
+    // Report Section 1, printed for every student. :name is the first name.
+    'introduction' => 'Dear :name, thank you for sharing your career interests, education goals, and personality preferences. Based on your expressed interest in specific industries and departments, along with your detailed personality assessment, we have carefully analyzed where your career preferences and personal strengths best align. The goal of this report is to guide you towards industries and departments that will offer you the greatest satisfaction, success, and growth in your education and career.',
+
     'education_levels' => [
         'SSC / O Level',
         'HSC / A Level',
@@ -129,4 +132,7 @@ return [
     // Validation failures are sent back to the AI this many times before the
     // draft is saved with its problems listed for the counsellor.
     'repair_attempts' => 1,
+
+    // Shown as the expected wait until real runs give an average.
+    'default_estimate_seconds' => 180,
 ];

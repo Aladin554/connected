@@ -124,16 +124,24 @@ class CareerReportTest extends TestCase
         $student = $this->completedStudent();
         Sanctum::actingAs($this->makeUser(2, 'admin@example.com'));
 
-        $this->postJson("/api/career-reports/{$student->id}/generate", ['report_date' => '2026-05-07'])
+        $this->postJson("/api/career-reports/{$student->id}/generate", [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['target_country', 'education_level', 'study_level']);
+            ->assertJsonValidationErrors(['target_country', 'study_level'])
+            ->assertJsonMissingValidationErrors(['education_level', 'report_date']);
 
-        $this->postJson("/api/career-reports/{$student->id}/generate", $this->inputs())->assertStatus(202);
+        $this->postJson("/api/career-reports/{$student->id}/generate", [
+            'target_country' => 'United Kingdom',
+            'study_level' => 'Undergraduate',
+            'report_date' => '2020-01-01',
+        ])->assertStatus(202);
 
         Queue::assertPushed(GenerateCareerReport::class);
         $report = CareerReport::where('user_id', $student->id)->first();
         $this->assertSame(CareerReport::STATUS_GENERATING, $report->status);
         $this->assertSame('United Kingdom', $report->target_country);
+        $this->assertNull($report->education_level);
+        // The report date is set by the server, whatever the browser sends.
+        $this->assertSame(today()->toDateString(), $report->report_date->toDateString());
     }
 
     public function test_a_second_generate_is_blocked_unless_the_first_job_was_lost(): void
@@ -157,6 +165,7 @@ class CareerReportTest extends TestCase
         $this->assertSame(CareerReport::STATUS_DRAFT, $report->status);
         $this->assertSame([], $report->issues);
         $this->assertSame('test-model', $report->model);
+        $this->assertArrayNotHasKey('introduction', $report->content);
 
         $personality = collect($report->snapshot['personality']);
         $this->assertSame(
@@ -174,6 +183,8 @@ class CareerReportTest extends TestCase
                 && $body['text']['format']['strict'] === true
                 && str_contains($body['input'], 'I love being outdoors all the time')
                 && str_contains($body['input'], 'United Kingdom')
+                && !array_key_exists('introduction', $body['text']['format']['schema']['properties'])
+                && !array_key_exists('verification_notes', $body['text']['format']['schema']['properties'])
                 && !str_contains($body['input'], 'student@example.com');
         });
     }
@@ -213,7 +224,7 @@ class CareerReportTest extends TestCase
 
         Sanctum::actingAs($this->makeUser(2, 'admin@example.com'));
         $this->postJson("/api/career-reports/{$student->id}/approve")->assertStatus(422);
-        $this->getJson("/api/career-reports/{$student->id}/pdf")->assertStatus(409);
+        $this->getJson("/api/career-reports/{$student->id}/pdf")->assertStatus(422);
     }
 
     /** @dataProvider invalidReports */
@@ -341,35 +352,76 @@ class CareerReportTest extends TestCase
         $this->assertNull($report->refresh()->content);
     }
 
-    public function test_edit_approve_and_download_flow(): void
+    public function test_a_finished_report_can_be_downloaded_without_approval(): void
     {
         Http::fake([self::OPENAI_URL => $this->openAiResponse($this->validContent())]);
         $student = $this->completedStudent();
         $this->generateFor($student);
 
-        $admin = $this->makeUser(2, 'admin@example.com');
-        Sanctum::actingAs($admin);
+        Sanctum::actingAs($this->makeUser(2, 'admin@example.com'));
 
-        $this->getJson("/api/career-reports/{$student->id}/pdf")->assertStatus(409);
-
-        $this->postJson("/api/career-reports/{$student->id}/approve")
-            ->assertOk()
-            ->assertJsonPath('data.report.status', 'approved');
+        $this->getJson("/api/career-reports/{$student->id}")
+            ->assertJsonPath('data.introduction', CareerReport::introductionFor('Test'))
+            ->assertJsonPath('data.estimate_seconds', 180);
+        $this->assertStringStartsWith('Dear Test, thank you for sharing', CareerReport::introductionFor('Test'));
 
         $pdf = $this->get("/api/career-reports/{$student->id}/pdf");
         $pdf->assertOk();
         $pdf->assertHeader('Content-Type', 'application/pdf');
         $this->assertStringStartsWith('%PDF', $pdf->getContent());
+    }
 
-        $content = $this->validContent();
-        $content['conclusion'] = 'Edited conclusion for the United Kingdom.';
-        $this->putJson("/api/career-reports/{$student->id}", ['content' => $content])
-            ->assertOk()
-            ->assertJsonPath('data.report.status', 'draft')
-            ->assertJsonPath('data.report.approved_at', null)
-            ->assertJsonPath('data.report.content.conclusion', 'Edited conclusion for the United Kingdom.');
+    public function test_a_chat_request_revises_the_report_and_keeps_the_conversation(): void
+    {
+        $revised = $this->validContent();
+        $revised['conclusion'] = 'A shorter conclusion for the United Kingdom.';
+        Http::fake([
+            self::OPENAI_URL => Http::sequence()
+                ->push($this->openAiBody($this->validContent()))
+                ->push($this->openAiBody(['reply' => 'I shortened the conclusion.', 'report' => $revised])),
+        ]);
+        $student = $this->completedStudent();
+        $this->generateFor($student);
 
-        $this->getJson("/api/career-reports/{$student->id}/pdf")->assertStatus(409);
+        Queue::fake();
+        Sanctum::actingAs($this->makeUser(2, 'admin@example.com'));
+        $this->postJson("/api/career-reports/{$student->id}/revise", ['message' => 'Make the conclusion shorter'])
+            ->assertStatus(202)
+            ->assertJsonPath('data.report.status', 'generating')
+            ->assertJsonPath('data.report.chat.0.text', 'Make the conclusion shorter');
+        $this->postJson("/api/career-reports/{$student->id}/revise", ['message' => 'Again'])->assertStatus(409);
+
+        Queue::assertPushed(GenerateCareerReport::class, fn ($job) => $job->request === 'Make the conclusion shorter');
+
+        $report = CareerReport::where('user_id', $student->id)->first();
+        app()->call([new GenerateCareerReport($report->id, 'Make the conclusion shorter'), 'handle']);
+        $report->refresh();
+
+        $this->assertSame(CareerReport::STATUS_DRAFT, $report->status);
+        $this->assertSame('A shorter conclusion for the United Kingdom.', $report->content['conclusion']);
+        $this->assertSame(['user', 'assistant'], array_column($report->chat, 'role'));
+        $this->assertSame('I shortened the conclusion.', $report->chat[1]['text']);
+        $this->assertNotNull($report->generation_started_at);
+
+        Http::assertSent(fn (Request $request) => str_contains($request->data()['input'], 'Make the conclusion shorter')
+            && str_contains($request->data()['input'], 'Current report:')
+            && $request->data()['text']['format']['schema']['required'] === ['reply', 'report']);
+    }
+
+    public function test_a_failed_chat_request_keeps_the_report_and_says_so(): void
+    {
+        Http::fake([self::OPENAI_URL => $this->openAiResponse($this->validContent())]);
+        $student = $this->completedStudent();
+        $report = $this->generateFor($student);
+        $report->update(['status' => CareerReport::STATUS_GENERATING, 'chat' => [['role' => 'user', 'text' => 'Change it', 'at' => now()->toIso8601String()]]]);
+
+        (new GenerateCareerReport($report->id, 'Change it'))->failed(new \RuntimeException('OpenAI returned an error: busy'));
+        $report->refresh();
+
+        $this->assertSame(CareerReport::STATUS_DRAFT, $report->status);
+        $this->assertSame($this->validContent()['conclusion'], $report->content['conclusion']);
+        $this->assertTrue($report->chat[1]['error']);
+        $this->assertStringContainsString('busy', $report->chat[1]['text']);
     }
 
     public function test_an_edit_that_breaks_the_report_blocks_approval(): void
@@ -405,7 +457,6 @@ class CareerReportTest extends TestCase
             'target_country' => 'United Kingdom',
             'education_level' => 'HSC / A Level',
             'study_level' => 'Undergraduate',
-            'report_date' => '2026-05-07',
         ];
     }
 
@@ -479,7 +530,6 @@ class CareerReportTest extends TestCase
         $industry = 'Healthcare and Medicine Industry';
 
         return [
-            'introduction' => 'This report guides your study plans in the United Kingdom.',
             'match_analysis' => [
                 ['industry' => $industry, 'department' => 'Surgical Services', 'match_level' => 'High', 'comments' => 'Technical teamwork.'],
                 ['industry' => $industry, 'department' => 'Nursing', 'match_level' => 'Moderate', 'comments' => 'Active, people-focused work.'],
@@ -495,7 +545,7 @@ class CareerReportTest extends TestCase
             ],
             'key_employers' => [['category' => 'Healthcare', 'employers' => ['NHS']]],
             'job_titles' => [['category' => 'Clinical', 'titles' => ['Operating Department Practitioner']]],
-            'final_recommendation_intro' => 'We recommend these undergraduate programs.',
+            'final_recommendation_intro' => 'We recommend these undergraduate programs in the United Kingdom.',
             'recommended_programs' => [
                 ['program' => 'BSc Operating Department Practice', 'leads_to_department' => 'Surgical Services', 'licensing_note' => 'Needs an approved course.'],
                 ['program' => 'BSc Nursing (Adult)', 'leads_to_department' => 'Nursing', 'licensing_note' => ''],
@@ -505,7 +555,6 @@ class CareerReportTest extends TestCase
                 'why' => [['heading' => 'Technical work', 'detail' => 'It suits specialised, hands-on work.']],
             ],
             'conclusion' => 'You are well placed for study in the United Kingdom.',
-            'verification_notes' => ['Check the current registration rules.'],
         ];
     }
 
