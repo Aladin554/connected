@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Circle, CircleCheck, Download, LoaderCircle, Send } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -228,6 +228,21 @@ function Toggle({
   );
 }
 
+/** Paints a logo glyph in the element's background colour. */
+function logoMask(src: string, width: number, height: number): CSSProperties {
+  const image = `url(${src})`;
+  return {
+    width,
+    height,
+    WebkitMaskImage: image,
+    maskImage: image,
+    WebkitMaskSize: "100% 100%",
+    maskSize: "100% 100%",
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+  };
+}
+
 const BUILD_STEPS = [
   "Reading the assessment answers",
   "Scoring each department",
@@ -299,15 +314,10 @@ function Progress({
               }}
             />
             <div className="absolute inset-[6px] flex items-center justify-center rounded-full bg-gradient-to-br from-gray-800 to-black shadow-lg ring-1 ring-white/10">
-              <span
-                className="text-[26px] leading-none text-white"
-                style={{
-                  fontFamily: "'Abril Fatface', Georgia, 'Times New Roman', serif",
-                  fontWeight: 900,
-                  animation: "cr-breathe 2.4s ease-in-out infinite",
-                }}
-              >
-                C<span className="text-blue-400">.</span>
+              {/* The C and dot are cut from the Connected logo, coloured through a mask. */}
+              <span className="flex items-end gap-[2px]" style={{ animation: "cr-breathe 2.4s ease-in-out infinite" }}>
+                <span className="block bg-white" style={logoMask("/images/logo/connected-c.png", 22, 28)} />
+                <span className="block bg-blue-400" style={logoMask("/images/logo/connected-dot.png", 6.5, 28)} />
               </span>
             </div>
           </div>
