@@ -17,7 +17,7 @@ class OpenAiClient
     {
         $settings = $this->config->values();
         if (!$settings['key']) {
-            throw new RuntimeException('No OpenAI API key is set. Add one in AI Settings.');
+            throw new RuntimeException('No AI API key is set. Add one in AI Settings.');
         }
 
         try {
@@ -42,17 +42,17 @@ class OpenAiClient
                     ],
                 ]);
         } catch (ConnectionException $e) {
-            throw new RuntimeException('Could not reach OpenAI: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException('Could not reach the AI service: ' . $e->getMessage(), 0, $e);
         }
 
         if ($response->failed()) {
             $message = $response->json('error.message') ?: 'HTTP ' . $response->status();
-            throw new RuntimeException('OpenAI returned an error: ' . $message);
+            throw new RuntimeException('The AI service returned an error: ' . $message);
         }
 
         if ($response->json('status') === 'incomplete') {
             $reason = $response->json('incomplete_details.reason') ?: 'unknown reason';
-            throw new RuntimeException("OpenAI stopped before finishing the report ({$reason}).");
+            throw new RuntimeException("The AI service stopped before finishing the report ({$reason}).");
         }
 
         return $this->parse($response->json('output') ?? []);
@@ -71,13 +71,13 @@ class OpenAiClient
                 ->timeout(30)
                 ->get(rtrim($this->config->values()['base_url'], '/') . '/models');
         } catch (ConnectionException) {
-            return ['ok' => false, 'message' => 'Could not reach OpenAI. Check the server connection.'];
+            return ['ok' => false, 'message' => 'Could not reach the AI service. Check the server connection.'];
         }
 
         if ($response->failed()) {
             $reason = $response->json('error.message') ?: 'HTTP ' . $response->status();
 
-            return ['ok' => false, 'message' => 'OpenAI rejected the request: ' . $reason];
+            return ['ok' => false, 'message' => 'The AI service rejected the request: ' . $reason];
         }
 
         return collect($response->json('data'))->contains('id', $model)
@@ -94,13 +94,13 @@ class OpenAiClient
 
             foreach ($item['content'] ?? [] as $content) {
                 if (($content['type'] ?? null) === 'refusal') {
-                    throw new RuntimeException('OpenAI refused the request: ' . ($content['refusal'] ?? ''));
+                    throw new RuntimeException('The AI service refused the request: ' . ($content['refusal'] ?? ''));
                 }
 
                 if (($content['type'] ?? null) === 'output_text') {
                     $decoded = json_decode($content['text'] ?? '', true);
                     if (!is_array($decoded)) {
-                        throw new RuntimeException('OpenAI returned text that is not valid JSON.');
+                        throw new RuntimeException('The AI service returned text that is not valid JSON.');
                     }
 
                     return $decoded;
@@ -108,6 +108,6 @@ class OpenAiClient
             }
         }
 
-        throw new RuntimeException('OpenAI returned no report text.');
+        throw new RuntimeException('The AI service returned no report text.');
     }
 }

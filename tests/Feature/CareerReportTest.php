@@ -415,7 +415,7 @@ class CareerReportTest extends TestCase
         $report = $this->generateFor($student);
         $report->update(['status' => CareerReport::STATUS_GENERATING, 'chat' => [['role' => 'user', 'text' => 'Change it', 'at' => now()->toIso8601String()]]]);
 
-        (new GenerateCareerReport($report->id, 'Change it'))->failed(new \RuntimeException('OpenAI returned an error: busy'));
+        (new GenerateCareerReport($report->id, 'Change it'))->failed(new \RuntimeException('The AI service returned an error: busy'));
         $report->refresh();
 
         $this->assertSame(CareerReport::STATUS_DRAFT, $report->status);

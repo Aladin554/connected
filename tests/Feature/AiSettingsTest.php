@@ -134,7 +134,7 @@ class AiSettingsTest extends TestCase
         $this->postJson('/api/ai-settings/test', ['api_key' => 'sk-wrong', 'model' => 'gpt-6-astra'])
             ->assertOk()
             ->assertJsonPath('data.ok', false)
-            ->assertJsonPath('data.message', 'OpenAI rejected the request: Incorrect API key provided');
+            ->assertJsonPath('data.message', 'The AI service rejected the request: Incorrect API key provided');
     }
 
     private function payload(array $overrides = []): array

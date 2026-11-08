@@ -157,7 +157,7 @@ export default function AiSettings() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">AI Settings</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          These settings control how ChatGPT writes Career Alignment Reports. Changes apply to the next report.
+          These settings control how Connected AI writes Career Alignment Reports. Changes apply to the next report.
         </p>
       </div>
 
@@ -193,11 +193,11 @@ export default function AiSettings() {
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Model</h2>
 
         <Field
-          label="ChatGPT Model"
+          label="AI Model"
           hint={
             estimate !== null
               ? `About $${estimate < 0.01 ? estimate.toFixed(3) : estimate.toFixed(2)} per report at medium reasoning. Input $${selected?.input_price} and output $${selected?.output_price} per 1M tokens.`
-              : "Enter the exact model name from OpenAI."
+              : "Enter the exact model name."
           }
         >
           <select

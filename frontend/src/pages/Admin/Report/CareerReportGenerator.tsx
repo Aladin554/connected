@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Circle, CircleCheck, Download, LoaderCircle, Send } from "lucide-react";
-import { SiOpenai } from "react-icons/si";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import api from "../../../api/axios";
@@ -274,16 +273,57 @@ function Progress({
 
   return (
     <div className="w-full overflow-hidden rounded-2xl border border-blue-100 dark:border-blue-900/60 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-blue-950/40 dark:via-gray-800 dark:to-indigo-950/40 p-5 space-y-5">
-      <style>{`@keyframes cr-shimmer { from { transform: translateX(-100%); } to { transform: translateX(250%); } }`}</style>
+      <style>{`
+        @keyframes cr-shimmer { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+        @keyframes cr-glow { 0%, 100% { opacity: .45; transform: scale(.9); } 50% { opacity: .95; transform: scale(1.1); } }
+        @keyframes cr-dot { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+        @keyframes cr-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+      `}</style>
 
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black text-white shadow-lg shadow-black/20 dark:bg-white dark:text-black">
-            <span className="absolute inset-0 rounded-full bg-gray-500 animate-ping opacity-20" />
-            <SiOpenai size={22} className="relative" style={{ animation: "spin 4s linear infinite" }} />
+        <div className="flex items-center gap-4">
+          {/* Connected "C." brand tile with a glowing comet ring. */}
+          <div className="relative h-16 w-16 shrink-0">
+            <span
+              className="absolute -inset-3 rounded-full bg-gradient-to-tr from-blue-500/50 to-violet-500/50 blur-xl"
+              style={{ animation: "cr-glow 2.4s ease-in-out infinite" }}
+            />
+            <span
+              className="absolute inset-0 rounded-full"
+              style={{
+                background:
+                  "conic-gradient(from 0deg, rgba(59,130,246,0) 0deg, rgba(59,130,246,.9) 150deg, #8b5cf6 300deg, rgba(139,92,246,0) 360deg)",
+                WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px))",
+                mask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px))",
+                animation: "spin 1.3s linear infinite",
+              }}
+            />
+            <div className="absolute inset-[6px] flex items-center justify-center rounded-full bg-gradient-to-br from-gray-800 to-black shadow-lg ring-1 ring-white/10">
+              <span
+                className="text-[26px] leading-none text-white"
+                style={{
+                  fontFamily: "'Abril Fatface', Georgia, 'Times New Roman', serif",
+                  fontWeight: 900,
+                  animation: "cr-breathe 2.4s ease-in-out infinite",
+                }}
+              >
+                C<span className="text-blue-400">.</span>
+              </span>
+            </div>
           </div>
           <div>
-            <p className="font-semibold text-gray-900 dark:text-gray-100">{title}</p>
+            <p className="flex items-end gap-1.5 text-base font-semibold text-gray-900 dark:text-gray-100">
+              {title}
+              <span className="mb-1.5 inline-flex gap-1" aria-hidden="true">
+                {[0, 1, 2].map((dot) => (
+                  <span
+                    key={dot}
+                    className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-blue-500 to-violet-500"
+                    style={{ animation: `cr-dot 1.2s ${dot * 0.18}s ease-in-out infinite` }}
+                  />
+                ))}
+              </span>
+            </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
           </div>
         </div>
@@ -515,7 +555,7 @@ export default function CareerReportGenerator() {
 
       {assessment.complete && !data.ai_configured && (
         <div className="p-5 rounded-2xl border border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-700 text-red-800 dark:text-red-200">
-          ChatGPT is not connected. A superadmin can add the API key in AI Settings.
+          Connected AI is not set up yet. A superadmin can add the API key in AI Settings.
         </div>
       )}
 
@@ -656,7 +696,7 @@ export default function CareerReportGenerator() {
             {building ? (
               <Progress
                 title="Generating the report"
-                subtitle="ChatGPT is writing a report from this student's answers."
+                subtitle="Connected is preparing a report from this student's answers."
                 steps={BUILD_STEPS}
                 startedAt={report?.generation_started_at ?? null}
                 estimate={data.estimate_seconds}
@@ -941,7 +981,7 @@ export default function CareerReportGenerator() {
             {revising ? (
               <Progress
                 title="Updating the report"
-                subtitle="ChatGPT is making the change you asked for."
+                subtitle="Connected is making the change you asked for."
                 steps={REVISE_STEPS}
                 startedAt={report?.generation_started_at ?? null}
                 estimate={data.estimate_seconds}
