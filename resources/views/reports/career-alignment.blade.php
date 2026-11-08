@@ -50,6 +50,8 @@
     .keep { page-break-inside: avoid; }
     ul.joined { margin-bottom: 0; }
     .note { font-size: 8pt; }
+    /* The best-fit program stands out like a highlighter mark, as in the client's sample. */
+    .highlight { background-color: #ffff00; padding: 0.5pt 1.5pt; }
 </style>
 </head>
 <body>
@@ -179,7 +181,7 @@
 
 <div class="section keep">
 <h2>10. Best Fit Program and Why</h2>
-<p class="lead"><strong>Recommended Program:</strong> {{ $bestFit['program'] ?? '' }}</p>
+<p class="lead"><strong>Recommended Program:</strong> <strong class="highlight">{{ $bestFit['program'] ?? '' }}</strong></p>
 <h3>Why this program fits you best:</h3>
 <ul>
     @foreach ($bestFit['why'] ?? [] as $reason)

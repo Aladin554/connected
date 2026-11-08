@@ -884,7 +884,10 @@ export default function CareerReportGenerator() {
               <div className="space-y-2">
                 <h3 className={sectionHeading}>10. Best Fit Program and Why</h3>
                 <p className={bodyText}>
-                  <span className="font-semibold">Recommended Program:</span> {content.best_fit_program.program}
+                  <span className="font-semibold">Recommended Program:</span>{" "}
+                  <span className="font-semibold bg-yellow-300 text-gray-900 px-1 rounded-sm">
+                    {content.best_fit_program.program}
+                  </span>
                 </p>
                 <ul className={`list-disc list-inside ml-3 ${bodyText} space-y-1`}>
                   {content.best_fit_program.why.map((reason) => (
