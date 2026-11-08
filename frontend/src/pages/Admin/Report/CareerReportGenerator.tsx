@@ -141,10 +141,10 @@ function inputsFrom(payload: Payload): Inputs {
   const pick = (value?: string | null) => value ?? "";
   const hasCommon = payload.system_data.common_departments.length > 0;
 
-  // Options start switched on for a new report; a saved report keeps its own choices.
+  // Budget, cities and the options are no longer in the form, so every report
+  // is generated with them blank / switched on rather than with old saved values.
   return {
     ...emptyInputs,
-    include_common_departments: hasCommon,
     ...(report?.target_country
       ? {
           target_country: pick(report.target_country),
@@ -152,14 +152,12 @@ function inputsFrom(payload: Payload): Inputs {
           study_level: pick(report.study_level) || "Undergraduate",
           academic_background: pick(report.academic_background),
           english_proficiency: pick(report.english_proficiency),
-          budget: pick(report.budget),
-          preferred_cities: pick(report.preferred_cities),
           counsellor_notes: pick(report.counsellor_notes),
-          include_common_departments: hasCommon && !!report.include_common_departments,
-          include_future_outlook: !!report.include_future_outlook,
-          include_immigration: !!report.include_immigration,
         }
       : {}),
+    include_common_departments: hasCommon,
+    include_future_outlook: true,
+    include_immigration: true,
   };
 }
 
@@ -197,33 +195,6 @@ function Field({
         {optional && <span className="font-normal text-gray-400 dark:text-gray-500"> (optional)</span>}
       </span>
       {children}
-    </label>
-  );
-}
-
-function Toggle({
-  label,
-  hint,
-  checked,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  checked: boolean;
-  onChange: (value: boolean) => void;
-}) {
-  return (
-    <label className="flex items-start gap-3 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-      />
-      <span>
-        <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">{label}</span>
-        <span className="block text-xs text-gray-500 dark:text-gray-400">{hint}</span>
-      </span>
     </label>
   );
 }
@@ -637,23 +608,6 @@ export default function CareerReportGenerator() {
             </Field>
             */}
 
-            <Field label="Budget per Year">
-              <input
-                value={inputs.budget}
-                onChange={(e) => setInput("budget", e.target.value)}
-                placeholder="BDT 22-25 lacs"
-                className={fieldClass}
-              />
-            </Field>
-
-            <Field label="Preferred Cities" optional>
-              <input
-                value={inputs.preferred_cities}
-                onChange={(e) => setInput("preferred_cities", e.target.value)}
-                placeholder="e.g. London, Manchester"
-                className={fieldClass}
-              />
-            </Field>
           </div>
 
           {/* Hidden for now; remove once the report flow is final.
@@ -677,30 +631,6 @@ export default function CareerReportGenerator() {
               className={fieldClass}
             />
           </Field>
-
-          <div className="grid sm:grid-cols-3 gap-4 pt-2">
-            {/* Only offered when the student picked common departments. */}
-            {system.common_departments.length > 0 && (
-              <Toggle
-                label="Show Common Departments"
-                hint={system.common_departments.join(", ")}
-                checked={inputs.include_common_departments}
-                onChange={(value) => setInput("include_common_departments", value)}
-              />
-            )}
-            <Toggle
-              label="Include future job outlook"
-              hint="Job demand and AI automation notes"
-              checked={inputs.include_future_outlook}
-              onChange={(value) => setInput("include_future_outlook", value)}
-            />
-            <Toggle
-              label="Include PR and immigration notes"
-              hint="General information only; check before sending"
-              checked={inputs.include_immigration}
-              onChange={(value) => setInput("include_immigration", value)}
-            />
-          </div>
 
           <div className="pt-2 space-y-3">
             {building ? (
